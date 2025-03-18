@@ -1,0 +1,117 @@
+[gd_scene load_steps=7 format=3 uid="uid://bu2eh6bntnl7q"]
+
+[ext_resource type="Script" uid="uid://ofkpqbuwt4g3" path="res://main.gd" id="1_7mycd"]
+[ext_resource type="Texture2D" uid="uid://cwbbehf2dy5uh" path="res://img/stand.svg" id="1_lquwl"]
+[ext_resource type="Texture2D" uid="uid://4wb8bevpcky0" path="res://img/hit.svg" id="2_7mycd"]
+[ext_resource type="Texture2D" uid="uid://cki46fagb0uob" path="res://img/double.svg" id="3_272bh"]
+[ext_resource type="Texture2D" uid="uid://3jrh6uj40657" path="res://img/split.svg" id="4_5vw27"]
+[ext_resource type="Texture2D" uid="uid://cku8saigk67ak" path="res://img/A.svg" id="5_kek77"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_7mycd")
+
+[node name="dealerCards" type="Label" parent="."]
+offset_left = 513.0
+offset_top = 123.0
+offset_right = 553.0
+offset_bottom = 146.0
+theme_override_font_sizes/font_size = 76
+text = "Dealer Cards"
+
+[node name="playerCards" type="Label" parent="."]
+offset_left = 518.0
+offset_top = 515.0
+offset_right = 558.0
+offset_bottom = 538.0
+text = "Player Cards"
+
+[node name="Stand" type="Button" parent="."]
+visible = false
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.718
+anchor_right = 0.2
+anchor_bottom = 0.718
+offset_left = -15.2
+offset_top = -315.264
+offset_right = 493.6
+offset_bottom = 204.736
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.1, 0.1)
+theme_override_font_sizes/font_size = 36
+action_mode = 0
+icon = ExtResource("1_lquwl")
+
+[node name="Hit" type="Button" parent="."]
+visible = false
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.718
+anchor_right = 0.2
+anchor_bottom = 0.718
+offset_left = -15.2
+offset_top = -215.264
+offset_right = 380.6
+offset_bottom = 304.736
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.1, 0.1)
+theme_override_font_sizes/font_size = 36
+action_mode = 0
+icon = ExtResource("2_7mycd")
+
+[node name="Double" type="Button" parent="."]
+visible = false
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.718
+anchor_right = 0.2
+anchor_bottom = 0.718
+offset_left = -15.2
+offset_top = -15.264
+offset_right = 453.6
+offset_bottom = 504.736
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.1, 0.1)
+theme_override_font_sizes/font_size = 36
+action_mode = 0
+icon = ExtResource("3_272bh")
+
+[node name="Split" type="Button" parent="."]
+visible = false
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.718
+anchor_right = 0.2
+anchor_bottom = 0.718
+offset_left = 34.8
+offset_top = -115.264
+offset_right = 519.6
+offset_bottom = 404.736
+grow_horizontal = 2
+grow_vertical = 2
+rotation = 1.5708
+scale = Vector2(0.1, 0.1)
+theme_override_font_sizes/font_size = 36
+action_mode = 0
+icon = ExtResource("4_5vw27")
+
+[node name="Insurance" type="Button" parent="."]
+visible = false
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.718
+anchor_right = 0.2
+anchor_bottom = 0.718
+offset_left = 284.8
+offset_top = -65.264
+offset_right = 561.6
+offset_bottom = 454.736
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.15, 0.15)
+theme_override_font_sizes/font_size = 36
+icon = ExtResource("5_kek77")
+icon_alignment = 1
