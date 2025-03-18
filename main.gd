@@ -41,12 +41,14 @@ func resetTable():
 	dealer.hasAce=false
 	dealer.blackjack=false
 	dealer.busted=false
-
+	dealer.hasAce=false
+	
 	player1.hands=[]
 	player1.score=0
 	player1.bet = 0
 	player1.busted =false
 	player1.blackjack=false
+	player1.hasAce=false
 
 	$totalDealer.visible = false
 	$totalPlayer.visible = false
@@ -59,6 +61,10 @@ func dealInitialCards():
 	dealCard('player1')
 	dealCard('dealer')
 	dealCard('player1')
+	
+	if player1.score == 21:
+		player1.blackjack = true
+		checkScore()
 			
 func buildDeck():
 	#var suits = ['Spades', 'Hearts', 'Clubs', 'Diamonds']
@@ -101,9 +107,11 @@ func dealCard(to):
 				dealer.hasAce=true
 			
 		'player1':
+			if card.score == 11: player1.hasAce = true
 			player1.hands.append(card)
 			player1.score += card.score
 			showCards('player1')
+			
 	deck.pop_at(index)
 
 func showCards(to):
@@ -148,16 +156,19 @@ func dealersTurn():
 	dealer.hands[1].hidden = false
 	dealer.score += dealer.hands[1].score
 	showCards('dealer')
-	while (dealer.score < 17):
+	
+	while (dealer.score < 17) && !player1.busted:
 		dealCard('dealer')
 		showCards('dealer')	
 	if dealer.score > 21: dealer.busted =true
 	checkScore()
-	print('End of Dealer')
-	$Timer.start()
+
 
 func checkScore():
-	if !player1.busted:
+	if player1.blackjack:
+		print('Blackjack!')
+		player1.balance += player1.bet * 1.5
+	elif !player1.busted:
 		if dealer.busted || player1.score > dealer.score: 
 			print('Player WON')
 			player1.balance += player1.bet * 2
@@ -165,9 +176,13 @@ func checkScore():
 			print('Player LOST')
 		elif dealer.score == player1.score:
 			print('DRAW')
+			player1.balance += player1.bet
 
+	player1.bet = 0
 	$Balance.text = str(player1.balance)
 	$Bet.text = str(player1.bet)
+	
+	$Timer.start()
 
 func _placeBet_button_pressed():
 	dealInitialCards()
@@ -202,6 +217,7 @@ func _double_button_pressed():
 		player1.balance -= player1.bet
 		player1.bet *= 2
 		updateMoney()
+		dealCard('player1')
 		showButtons(false)
 		dealersTurn()
 	else:
