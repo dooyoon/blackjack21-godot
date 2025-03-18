@@ -1,4 +1,5 @@
 extends Node
+
 var numberOfDecks = 2
 var deck = []
 var dealer = player.new()
@@ -25,23 +26,34 @@ func _ready():
 	$placeBet.pressed.connect(_placeBet_button_pressed)
 	$chip100.pressed.connect(_chip100_button_pressed)
 	
+	$Timer.timeout.connect(resetTable)
+	
 
 func resetTable():
 	showButtons(false)
 
 	dealerPlay=false
 	$dealerCards.text = ''
+	$playerCards.text = ''
+
+	dealer.hands=[]
+	dealer.score=0
 	dealer.hasAce=false
 	dealer.blackjack=false
 	dealer.busted=false
-	$totalDealer.visible = false
-	
+
+	player1.hands=[]
+	player1.score=0
 	player1.bet = 0
 	player1.busted =false
-	$playerCards.text = ''
 	player1.blackjack=false
+
+	$totalDealer.visible = false
 	$totalPlayer.visible = false
+	$placeBet.visible = true
 	
+	$Timer.stop()
+
 func dealInitialCards():
 	dealCard('dealer')
 	dealCard('player1')
@@ -69,7 +81,7 @@ func buildDeck():
 				card.score = score
 				deck.push_back(card)
 				#print('%s - %s - %s' % [suit, value, score] )
-	
+
 func dealCard(to):
 	# deal 1st card to player
 	var index = randi_range(0, deck.size()-1)
@@ -113,12 +125,10 @@ func showCards(to):
 	$totalDealer.text = str(dealer.score)
 	$totalDealer.visible = true
 	$totalPlayer.visible = true
-	
 
 func updateMoney():
 	$Balance.text = str(player1.balance)
 	$Bet.text = str(player1.bet)
-	pass
 
 func showButtons(show):
 	if show:
@@ -140,11 +150,11 @@ func dealersTurn():
 	showCards('dealer')
 	while (dealer.score < 17):
 		dealCard('dealer')
-		
+		showCards('dealer')	
 	if dealer.score > 21: dealer.busted =true
-	#Check score
 	checkScore()
 	print('End of Dealer')
+	$Timer.start()
 
 func checkScore():
 	if !player1.busted:
@@ -155,21 +165,22 @@ func checkScore():
 			print('Player LOST')
 		elif dealer.score == player1.score:
 			print('DRAW')
-		
+
+	$Balance.text = str(player1.balance)
+	$Bet.text = str(player1.bet)
+
 func _placeBet_button_pressed():
 	dealInitialCards()
 	showCards('player1')
 	showCards('dealer')
 	showButtons(true)
-	
-	pass
-	
+	$placeBet.visible = false
+
 func _chip100_button_pressed():
 	player1.bet += 100
 	player1.balance -= 100
 	updateMoney()
-	pass
-	
+
 func _stand_button_pressed():
 	print("Stand")
 	dealerPlay = true
@@ -183,7 +194,6 @@ func _hit_button_pressed():
 		player1.busted = true
 		showButtons(false)
 		dealersTurn()
-	pass
 
 func _double_button_pressed():
 	if player1.balance >= player1.bet:
@@ -199,18 +209,16 @@ func _double_button_pressed():
 
 func _split_button_pressed():
 	print("Split")
-	pass
 
 func _insurance_button_pressed():
 	print("Insurance")
-	pass
 
 class card:
 	var suit
 	var value
 	var score
 	var hidden
-	
+
 class player:
 	var balance=1000
 	var bet=0

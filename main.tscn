@@ -163,3 +163,6 @@ offset_top = 417.0
 offset_right = 565.0
 offset_bottom = 440.0
 text = "0"
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 3.0
