@@ -7,7 +7,6 @@ var player1 = player.new()
 var dealerPlay = false
 
 func _ready():
-	print("Hello")
 	$dealerCards.add_theme_font_size_override("font_size", 36)
 	$dealerCards.global_position.x = get_viewport().size.x / 2 - $dealerCards.text.length() * 10
 	
@@ -18,11 +17,11 @@ func _ready():
 	$Balance.text = str(player1.balance)
 	$Bet.text = str(player1.bet)
 
-	$Stand.pressed.connect(_stand_button_pressed)
-	$Hit.pressed.connect(_hit_button_pressed)
-	$Double.pressed.connect(_double_button_pressed)
-	$Split.pressed.connect(_split_button_pressed)
-	$Insurance.pressed.connect(_insurance_button_pressed)
+	$actions/Stand.pressed.connect(_stand_button_pressed)
+	$actions/Hit.pressed.connect(_hit_button_pressed)
+	$actions/Double.pressed.connect(_double_button_pressed)
+	$actions/Split.pressed.connect(_split_button_pressed)
+	$actions/Insurance.pressed.connect(_insurance_button_pressed)
 	$placeBet.pressed.connect(_placeBet_button_pressed)
 	$chip100.pressed.connect(_chip100_button_pressed)
 	
@@ -49,6 +48,8 @@ func resetTable():
 	player1.busted =false
 	player1.blackjack=false
 	player1.hasAce=false
+	player1.insurance=false
+	$actions/Insurance.visible=false
 
 	$totalDealer.visible = false
 	$totalPlayer.visible = false
@@ -57,15 +58,26 @@ func resetTable():
 	$Timer.stop()
 
 func dealInitialCards():
-	dealCard('dealer')
-	dealCard('player1')
-	dealCard('dealer')
-	dealCard('player1')
+	#dealCard('dealer',null)
+	dealCard('dealer',{'suit':'C','value':'A','score':11,'hidden':false})
+	dealCard('player1',null) #{'suit':'C','value':'A','score':11})
+	dealCard('dealer',{'suit':'C','value':10,'score':10,'hidden':false})
+	dealCard('player1',null) #{'suit':'C','value':10,'score':10})
 	
 	if player1.score == 21:
 		player1.blackjack = true
 		checkScore()
-			
+	
+	if dealer.hasAce:
+		print('Insurance?')
+		$actions/Insurance.visible=true
+		
+	elif dealer.blackjack:
+		dealer.hands[1].hidden=false
+		dealer.score = 21
+		showCards('dealer')
+		checkScore()
+		
 func buildDeck():
 	#var suits = ['Spades', 'Hearts', 'Clubs', 'Diamonds']
 	var suits = ['S', 'H', 'C', 'D']
@@ -88,10 +100,11 @@ func buildDeck():
 				deck.push_back(card)
 				#print('%s - %s - %s' % [suit, value, score] )
 
-func dealCard(to):
+func dealCard(to, custom):
 	# deal 1st card to player
 	var index = randi_range(0, deck.size()-1)
 	var card = deck[index]
+	if custom: card = custom
 	match to:
 		'dealer':
 			if !dealerPlay && dealer.hands.size() == 1:
@@ -138,18 +151,22 @@ func updateMoney():
 	$Balance.text = str(player1.balance)
 	$Bet.text = str(player1.bet)
 
+func playsound():
+	$sound/chip.play()
+	await $sound/chip.finished
+	
 func showButtons(show):
 	if show:
-		$Stand.visible = true
-		$Hit.visible = true
-		$Double.visible = true
-		$Split.visible = true
+		$actions/Stand.visible = true
+		$actions/Hit.visible = true
+		$actions/Double.visible = true
+		$actions/Split.visible = true
 		
 	else:
-		$Stand.visible = false
-		$Hit.visible = false
-		$Double.visible = false
-		$Split.visible = false
+		$actions/Stand.visible = false
+		$actions/Hit.visible = false
+		$actions/Double.visible = false
+		$actions/Split.visible = false
 
 func dealersTurn():
 	print('Dealer\'s turn')
@@ -158,16 +175,22 @@ func dealersTurn():
 	showCards('dealer')
 	
 	while (dealer.score < 17) && !player1.busted:
-		dealCard('dealer')
+		dealCard('dealer',null)
 		showCards('dealer')	
 	if dealer.score > 21: dealer.busted =true
 	checkScore()
 
 
 func checkScore():
-	if player1.blackjack:
+	if player1.blackjack && !dealer.blackjack:
 		print('Blackjack!')
-		player1.balance += player1.bet * 1.5
+		player1.balance += player1.bet + player1.bet * 1.5
+	elif player1.blackjack && dealer.blackjack:
+		print('Even money')
+		player1.balance += player1.bet * 2
+	elif dealer.blackjack:
+		print('Dealer Blackjack...')
+		# Did any one do Insurance?
 	elif !player1.busted:
 		if dealer.busted || player1.score > dealer.score: 
 			print('Player WON')
@@ -178,6 +201,7 @@ func checkScore():
 			print('DRAW')
 			player1.balance += player1.bet
 
+	playsound()
 	player1.bet = 0
 	$Balance.text = str(player1.balance)
 	$Bet.text = str(player1.bet)
@@ -185,6 +209,8 @@ func checkScore():
 	$Timer.start()
 
 func _placeBet_button_pressed():
+	$sound/chip.play()
+	await $sound/chip.finished
 	dealInitialCards()
 	showCards('player1')
 	showCards('dealer')
@@ -195,6 +221,8 @@ func _chip100_button_pressed():
 	player1.bet += 100
 	player1.balance -= 100
 	updateMoney()
+	$sound/chip.play()
+	await $sound/chip.finished
 
 func _stand_button_pressed():
 	print("Stand")
@@ -204,7 +232,7 @@ func _stand_button_pressed():
 
 func _hit_button_pressed():
 	print("Hit")
-	dealCard('player1')
+	dealCard('player1',null)
 	if (player1.score > 21):
 		player1.busted = true
 		showButtons(false)
@@ -217,7 +245,7 @@ func _double_button_pressed():
 		player1.balance -= player1.bet
 		player1.bet *= 2
 		updateMoney()
-		dealCard('player1')
+		dealCard('player1',null)
 		showButtons(false)
 		dealersTurn()
 	else:
@@ -228,6 +256,12 @@ func _split_button_pressed():
 
 func _insurance_button_pressed():
 	print("Insurance")
+	$actions/Insurance.visible=false
+	player1.balance -= player1.bet / 2
+	updateMoney()
+	if dealer.blackjack:
+		player1.balance += player1.bet * 2
+
 
 class card:
 	var suit
@@ -244,3 +278,4 @@ class player:
 	var hasAce=false
 	var busted=false
 	var score=0
+	var insurance=false
