@@ -19,26 +19,11 @@ script = ExtResource("1_7mycd")
 position = Vector2(799, 268)
 stream = ExtResource("2_kek77")
 
-[node name="dealerCards" type="Label" parent="."]
-offset_left = 382.0
-offset_top = 86.0
-offset_right = 852.0
-offset_bottom = 191.0
-theme_override_font_sizes/font_size = 76
-text = "Dealer Cards"
-
-[node name="playerCards" type="Label" parent="."]
-offset_left = 547.0
-offset_top = 325.0
-offset_right = 649.0
-offset_bottom = 358.0
-text = "Player Cards"
-
 [node name="placeBet" type="Button" parent="."]
-offset_left = 518.0
-offset_top = 434.0
-offset_right = 576.0
-offset_bottom = 492.0
+offset_left = 526.0
+offset_top = 551.0
+offset_right = 584.0
+offset_bottom = 609.0
 action_mode = 0
 icon = ExtResource("2_5vw27")
 
@@ -65,17 +50,19 @@ offset_bottom = 456.0
 text = "Bet"
 
 [node name="totalDealer" type="Label" parent="."]
-offset_left = 528.0
-offset_top = 190.0
-offset_right = 568.0
-offset_bottom = 218.0
+visible = false
+offset_left = 529.0
+offset_top = 266.0
+offset_right = 569.0
+offset_bottom = 294.0
 text = "0"
 
 [node name="totalPlayer" type="Label" parent="."]
-offset_left = 526.0
-offset_top = 384.0
-offset_right = 566.0
-offset_bottom = 407.0
+visible = false
+offset_left = 533.0
+offset_top = 486.0
+offset_right = 573.0
+offset_bottom = 509.0
 text = "0"
 
 [node name="Timer" type="Timer" parent="."]
@@ -84,6 +71,7 @@ wait_time = 3.0
 [node name="actions" type="Node" parent="."]
 
 [node name="Stand" type="Button" parent="actions"]
+visible = false
 anchors_preset = -1
 anchor_left = 0.1
 anchor_top = 0.718
@@ -101,6 +89,7 @@ action_mode = 0
 icon = ExtResource("1_lquwl")
 
 [node name="Hit" type="Button" parent="actions"]
+visible = false
 anchors_preset = -1
 anchor_left = 0.1
 anchor_top = 0.718
@@ -118,6 +107,7 @@ action_mode = 0
 icon = ExtResource("2_7mycd")
 
 [node name="Double" type="Button" parent="actions"]
+visible = false
 anchors_preset = -1
 anchor_left = 0.1
 anchor_top = 0.718
@@ -135,6 +125,7 @@ action_mode = 0
 icon = ExtResource("3_272bh")
 
 [node name="Split" type="Button" parent="actions"]
+visible = false
 anchors_preset = -1
 anchor_left = 0.1
 anchor_top = 0.718
@@ -169,9 +160,3 @@ scale = Vector2(0.15, 0.15)
 theme_override_font_sizes/font_size = 36
 icon = ExtResource("5_kek77")
 icon_alignment = 1
-
-[node name="card1" type="TextureRect" parent="."]
-offset_left = 223.0
-offset_top = 214.0
-offset_right = 263.0
-offset_bottom = 254.0
