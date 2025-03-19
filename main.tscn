@@ -42,23 +42,6 @@ offset_bottom = 492.0
 action_mode = 0
 icon = ExtResource("2_5vw27")
 
-[node name="placeBet2" type="Button" parent="."]
-visible = false
-offset_left = 799.0
-offset_top = 268.0
-offset_right = 880.0
-offset_bottom = 334.0
-action_mode = 0
-
-[node name="placeBet3" type="Button" parent="."]
-visible = false
-offset_left = 255.0
-offset_top = 281.0
-offset_right = 363.0
-offset_bottom = 389.0
-action_mode = 0
-icon = ExtResource("2_5vw27")
-
 [node name="chip100" type="Button" parent="."]
 offset_left = 1005.0
 offset_top = 493.0
@@ -186,3 +169,9 @@ scale = Vector2(0.15, 0.15)
 theme_override_font_sizes/font_size = 36
 icon = ExtResource("5_kek77")
 icon_alignment = 1
+
+[node name="card1" type="TextureRect" parent="."]
+offset_left = 223.0
+offset_top = 214.0
+offset_right = 263.0
+offset_bottom = 254.0

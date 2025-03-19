@@ -109,6 +109,8 @@ func dealCard(to, custom):
 		'dealer':
 			if !dealerPlay && dealer.hands.size() == 1:
 				card.hidden = true
+				var cardImgPath = 'img/cards/Club2'+'.svg'
+				loadCardImage(cardImgPath)
 				if (dealer.score + card.score == 21):
 					dealer.blackjack = true
 			else:
@@ -279,3 +281,14 @@ class player:
 	var busted=false
 	var score=0
 	var insurance=false
+
+func loadCardImage(cache_path):
+	print("load image:"+cache_path)
+	
+	var image = Image.new()
+	var err = image.load(cache_path)
+	if err != OK:
+		print("File not loaded:",err)
+	
+	var texture=ImageTexture.create_from_image(image)
+	$card1.texture = texture
