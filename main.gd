@@ -8,6 +8,7 @@ var dealtCardsImg = []
 var viewCenterX
 var viewCenterY
 var cardSize = 125
+var newDeal = false
 
 func wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds).timeout
@@ -55,6 +56,7 @@ func _ready():
 
 func resetTable():
 	showButtons(false)
+	newDeal=false
 
 	dealer.hands.clear()
 	dealer.score=0
@@ -196,6 +198,9 @@ func dealersTurn():
 	if dealer.score == 17 && dealer.hasAce && dealer.hands.size() == 2:
 		dealer.score = 7
 
+	# handle 2 Ace which is set as 22.
+	if dealer.score == 22 && dealer.aceCount == 2: dealer.score = 12
+		
 	var count=0
 	while (!dealer.busted && !player1.busted) && dealer.score < 17:
 		dealCard('dealer',null)
@@ -214,12 +219,15 @@ func checkScore():
 	if player1.blackjack && !dealer.blackjack:
 		print('Player Blackjack!')
 		player1.balance += player1.bet + player1.bet * 1.5
+		newDeal = true
 	elif player1.blackjack && dealer.blackjack:
 		print('Even money')
 		player1.balance += player1.bet * 2
+		newDeal = true
 	elif dealer.blackjack:
 		print('Dealer Blackjack...')
 		# Did any one do Insurance?
+		newDeal = true
 	elif !player1.busted:
 		if dealer.busted || player1.score > dealer.score: 
 			print('Player WON')
@@ -229,13 +237,14 @@ func checkScore():
 		elif dealer.score == player1.score:
 			print('DRAW')
 			player1.balance += player1.bet
-
+		newDeal = true
+	
 	playsound()
 	player1.bet = 0
 	$Balance.text = str(player1.balance)
 	$Bet.text = str(player1.bet)
 	
-	$Timer.start()
+	if newDeal: 	$Timer.start()
 
 func _placeBet_button_pressed():
 	$sound/chip.play()
