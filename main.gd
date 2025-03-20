@@ -96,10 +96,10 @@ func resetTable():
 
 func dealInitialCards():
 	dealCard('dealer',null)
-	#dealCard('dealer',{'suit':'Club','value':'5','score':5,'hidden':false})
+	#dealCard('dealer',{'suit':'Club','value':'A','score':11,'hidden':false})
 	dealCard('player1',null)
 	dealCard('dealer',null)
-	#dealCard('dealer',{'suit':'Club','value':7,'score':7,'hidden':false})
+	#dealCard('dealer',{'suit':'Club','value':2,'score':2,'hidden':false})
 	dealCard('player1',null)
 		
 	if player1.score == 21:
@@ -189,6 +189,7 @@ func showButtons(show):
 func dealersTurn():
 	showButtons(false)
 	dealer.isTurn=true
+	checkScore()
 	
 	dealer.hands[1].hidden = false
 	dealer.score += dealer.hands[1].score
@@ -201,17 +202,25 @@ func dealersTurn():
 	# handle 2 Ace which is set as 22.
 	if dealer.score == 22 && dealer.aceCount == 2: dealer.score = 12
 		
-	var count=0
+	#var count=0
 	while (!dealer.busted && !player1.busted) && dealer.score < 17:
 		dealCard('dealer',null)
-		#dealCard('dealer',{'suit':'Club','value':'A','score':11,'hidden':false})
+		#if dealer.hands.size() == 2: dealCard('dealer',{'suit':'Club','value':'K','score':10,'hidden':false})
+		#else: dealCard('dealer',null)
+
 		if dealer.score > 21:
-			if dealer.score - dealer.aceCount*10 <= 21:
-				dealer.score = dealer.score - dealer.aceCount*10
+			if dealer.hasAce:
+				dealer.score = 0
+				for card in dealer.hands:
+					if str(card.value) == 'A': card.score = 1
+					dealer.score += card.score
+				
 			else:
 				dealer.busted =true
-		count += 1
-		print('Dealer loop: %s' % count)
+
+		updateTotal()
+		#count += 1
+		#print('Dealer loop: %s' % count)
 
 	checkScore()
 
@@ -235,7 +244,7 @@ func checkScore():
 		elif dealer.score > player1.score:
 			print('Player LOST')
 		elif dealer.score == player1.score:
-			print('DRAW')
+			print('PUSH')
 			player1.balance += player1.bet
 		newDeal = true
 	
@@ -271,14 +280,18 @@ func _stand_button_pressed():
 func _hit_button_pressed():
 	print("Hit")
 	dealCard('player1',null)
-	if (player1.score > 21):
-		if player1.score - player1.aceCount*10 <= 21:
-			player1.score = player1.score - player1.aceCount*10
-			updateTotal()
-		else:
-			player1.busted = true
-			player1.isTurn = false
-			dealersTurn()
+	
+	if player1.score > 21 && player1.hasAce:
+		player1.score = 0
+		for card in player1.hands:
+			if str(card.value) == 'A': card.score = 1
+			player1.score += card.score
+	if player1.score > 21:
+		player1.busted = true
+		player1.isTurn = false
+		dealersTurn()
+
+	updateTotal()
 
 	if player1.score == 21:
 		player1.isTurn =false
