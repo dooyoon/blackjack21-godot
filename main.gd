@@ -305,7 +305,7 @@ func _stand_button_pressed():
 func _hit_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-		if dealer.blackjack: dealersTurn()
+	if dealer.blackjack: dealersTurn(); return
 
 	#print("Hit")
 	dealCard('player1',null)
@@ -322,7 +322,7 @@ func _hit_button_pressed():
 func _double_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-		if dealer.blackjack: dealersTurn()
+	if dealer.blackjack: dealersTurn(); return
 
 	if player1.balance >= player1.bet:
 		#print("Double")
@@ -338,7 +338,7 @@ func _double_button_pressed():
 func _split_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-		if dealer.blackjack: dealersTurn()
+	if dealer.blackjack: dealersTurn(); return
 
 	#print("Split")
 
