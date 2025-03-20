@@ -10,9 +10,15 @@ var viewCenterY
 var cardSize = 125
 var newDeal = false
 
-func wait(seconds: float) -> void:
-	await get_tree().create_timer(seconds).timeout
-
+func message(msg, color):
+	$Warning.visible = true
+	$Warning.text = msg
+	$Warning.add_theme_font_size_override("font_size", 36)
+	$Warning.add_theme_color_override('font_color', color)
+	
+	await get_tree().create_timer(3).timeout
+	$Warning.visible = false
+	
 func buildDeck():
 	deck.clear()
 	var suits = ['Spade', 'Heart', 'Club', 'Diamond']
@@ -37,6 +43,7 @@ func buildDeck():
 				#print('%s - %s - %s' % [suit, value, score] )
 
 func _ready():
+	showButtons(false)
 	viewCenterX = get_viewport().size.x / 2
 	viewCenterY = get_viewport().size.y / 2
 	
@@ -94,8 +101,13 @@ func resetTable():
 	$Timer.stop()
 	
 	newDeal=false
-
+	$placeBet.visible = true
+	$chip100.visible = true
+	
 func dealInitialCards():
+	$placeBet.visible = false
+	$chip100.visible = false
+	
 	dealCard('dealer',null)
 	#dealCard('dealer',{'suit':'Club','value':7,'score':7,'hidden':false})
 	dealCard('player1',null)
@@ -176,7 +188,7 @@ func dealCard(to, custom):
 	$totalPlayer.visible = true
 	updateTotal()
 	
-	print('Number of cards left: %s' % deck.size())
+	#print('Number of cards left: %s' % deck.size())
 
 func updateMoney():
 	$Balance.text = str(player1.balance)
@@ -234,11 +246,11 @@ func dealersTurn():
 
 func checkScore():
 	if player1.blackjack && !dealer.blackjack:
-		print('Player Blackjack!')
+		message('BlackJack!','ORANGE')
 		player1.balance += player1.bet + player1.bet * 1.5
 		newDeal = true
 	elif player1.blackjack && dealer.blackjack:
-		print('Even money')
+		message('Even Money','CYAN')
 		player1.balance += player1.bet * 2
 		newDeal = true
 	elif dealer.blackjack:
@@ -247,12 +259,12 @@ func checkScore():
 		newDeal = true
 	elif !player1.busted:
 		if dealer.busted || player1.score > dealer.score: 
-			print('Player WON')
+			message('Won','ORANGE')
 			player1.balance += player1.bet * 2
 		elif dealer.score > player1.score:
-			print('Player LOST')
+			message('Lost','RED')
 		elif dealer.score == player1.score:
-			print('PUSH')
+			message('Push','CYAN')
 			player1.balance += player1.bet
 		newDeal = true
 	elif player1.busted && !dealer.busted:
@@ -286,7 +298,7 @@ func _chip100_button_pressed():
 
 func _stand_button_pressed():
 	$actions/Insurance.visible = false
-	print("Stand")
+	#print("Stand")
 	player1.isTurn = false
 	dealersTurn()
 
@@ -295,7 +307,7 @@ func _hit_button_pressed():
 		$actions/Insurance.visible = false
 		if dealer.blackjack: dealersTurn()
 
-	print("Hit")
+	#print("Hit")
 	dealCard('player1',null)
 	
 	if player1.score > 21:
@@ -313,7 +325,7 @@ func _double_button_pressed():
 		if dealer.blackjack: dealersTurn()
 
 	if player1.balance >= player1.bet:
-		print("Double")
+		#print("Double")
 		player1.balance -= player1.bet
 		player1.bet *= 2
 		updateMoney()
@@ -328,10 +340,10 @@ func _split_button_pressed():
 		$actions/Insurance.visible = false
 		if dealer.blackjack: dealersTurn()
 
-	print("Split")
+	#print("Split")
 
 func _insurance_button_pressed():
-	print("Insurance")
+	#print("Insurance")
 	$actions/Insurance.visible=false
 	player1.balance -= player1.bet / 2
 	updateMoney()
@@ -382,6 +394,15 @@ func showDealerHidden(tempCard):
 	
 	$totalDealer.text = str(dealer.score)
 
+func loadBackground():
+	var background = TextureRect.new()
+	var image = Image.new()
+	image.load('res://img/empty_table.jpg')
+	var texture = ImageTexture.create_from_image(image)
+	background.texture = texture
+	add_child(background)
+	pass
+	
 class card:
 	var suit
 	var value
