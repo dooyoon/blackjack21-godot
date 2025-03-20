@@ -56,7 +56,6 @@ func _ready():
 
 func resetTable():
 	showButtons(false)
-	newDeal=false
 
 	dealer.hands.clear()
 	dealer.score=0
@@ -93,14 +92,18 @@ func resetTable():
 		print('Reshuffle')
 
 	$Timer.stop()
+	
+	newDeal=false
 
 func dealInitialCards():
 	dealCard('dealer',null)
-	#dealCard('dealer',{'suit':'Club','value':'A','score':11,'hidden':false})
+	#dealCard('dealer',{'suit':'Club','value':7,'score':7,'hidden':false})
 	dealCard('player1',null)
+	#dealCard('player1',{'suit':'Club','value':'A','score':11,'hidden':false})
 	dealCard('dealer',null)
-	#dealCard('dealer',{'suit':'Club','value':2,'score':2,'hidden':false})
+	#dealCard('dealer',{'suit':'Club','value':4,'score':4,'hidden':false})
 	dealCard('player1',null)
+	#dealCard('player1',{'suit':'Club','value':'A','score':11,'hidden':false})
 		
 	if player1.score == 21:
 		player1.blackjack = true
@@ -118,7 +121,6 @@ func dealInitialCards():
 		checkScore()
 
 func dealCard(to, custom):
-	
 	# deal 1st card to player
 	var cardImgPath
 	var index = randi_range(0, deck.size()-1)
@@ -153,7 +155,23 @@ func dealCard(to, custom):
 			player1.score += card.score
 
 	deck.pop_at(index)
+
+	#dealer score
+	if dealer.score > 21 && dealer.aceCount > 0:
+		for n in dealer.hands.size():
+			if str(dealer.hands[n].value) == 'A' && dealer.hands[n].score == 11: 
+				dealer.hands[n].score = 1
+				dealer.score -= 10
+				if dealer.score < 22: break
 	
+	#player score
+	if player1.score > 21 && player1.aceCount >0:
+		for n in player1.hands.size():
+			if str(player1.hands[n].value) == 'A' && player1.hands[n].score == 11: 
+				player1.hands[n].score = 1
+				player1.score -= 10
+				if player1.score < 22: break
+
 	$totalDealer.visible = true
 	$totalPlayer.visible = true
 	updateTotal()
@@ -197,31 +215,21 @@ func dealersTurn():
 	
 	# dealer hits on soft-17
 	if dealer.score == 17 && dealer.hasAce && dealer.hands.size() == 2:
-		dealer.score = 7
+		dealCard('dealer',null)
 
-	# handle 2 Ace which is set as 22.
-	if dealer.score == 22 && dealer.aceCount == 2: dealer.score = 12
-		
 	#var count=0
 	while (!dealer.busted && !player1.busted) && dealer.score < 17:
 		dealCard('dealer',null)
-		#if dealer.hands.size() == 2: dealCard('dealer',{'suit':'Club','value':'K','score':10,'hidden':false})
+		#if dealer.hands.size() == 2: dealCard('dealer',{'suit':'Club','value':'A','score':11,'hidden':false})
 		#else: dealCard('dealer',null)
 
 		if dealer.score > 21:
-			if dealer.hasAce:
-				dealer.score = 0
-				for card in dealer.hands:
-					if str(card.value) == 'A': card.score = 1
-					dealer.score += card.score
-				
-			else:
-				dealer.busted =true
+			dealer.busted =true
 
-		updateTotal()
 		#count += 1
 		#print('Dealer loop: %s' % count)
 
+	print("outside while")
 	checkScore()
 
 func checkScore():
@@ -247,6 +255,8 @@ func checkScore():
 			print('PUSH')
 			player1.balance += player1.bet
 		newDeal = true
+	elif player1.busted && !dealer.busted:
+		newDeal = true
 	
 	playsound()
 	player1.bet = 0
@@ -266,38 +276,42 @@ func _placeBet_button_pressed():
 		print('Place a bet first')
 
 func _chip100_button_pressed():
+	$sound/chip.play()
+	await $sound/chip.finished
+	if newDeal == true: return
+
 	player1.bet += 100
 	player1.balance -= 100
 	updateMoney()
-	$sound/chip.play()
-	await $sound/chip.finished
 
 func _stand_button_pressed():
+	$actions/Insurance.visible = false
 	print("Stand")
 	player1.isTurn = false
 	dealersTurn()
 
 func _hit_button_pressed():
+	if $actions/Insurance.visible == true:
+		$actions/Insurance.visible = false
+		if dealer.blackjack: dealersTurn()
+
 	print("Hit")
 	dealCard('player1',null)
 	
-	if player1.score > 21 && player1.hasAce:
-		player1.score = 0
-		for card in player1.hands:
-			if str(card.value) == 'A': card.score = 1
-			player1.score += card.score
 	if player1.score > 21:
 		player1.busted = true
 		player1.isTurn = false
 		dealersTurn()
-
-	updateTotal()
 
 	if player1.score == 21:
 		player1.isTurn =false
 		dealersTurn()
 
 func _double_button_pressed():
+	if $actions/Insurance.visible == true:
+		$actions/Insurance.visible = false
+		if dealer.blackjack: dealersTurn()
+
 	if player1.balance >= player1.bet:
 		print("Double")
 		player1.balance -= player1.bet
@@ -310,6 +324,10 @@ func _double_button_pressed():
 		print('Not enough balace left!')
 
 func _split_button_pressed():
+	if $actions/Insurance.visible == true:
+		$actions/Insurance.visible = false
+		if dealer.blackjack: dealersTurn()
+
 	print("Split")
 
 func _insurance_button_pressed():
@@ -322,7 +340,7 @@ func _insurance_button_pressed():
 
 func getImgPath(tempCard):
 	return 'img/cards/' + str(tempCard.suit) + str(tempCard.value) + '.svg'
-	
+
 func getImg(to, tempCard, count): # card width, height is 3/2 ratio
 	var path
 	var newCard = TextureRect.new()
