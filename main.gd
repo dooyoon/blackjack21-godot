@@ -65,6 +65,7 @@ func resetTable():
 	showButtons(false)
 
 	dealer.hands.clear()
+	#dealer.hands.erase(0)
 	dealer.score=0
 	dealer.hasAce=false
 	dealer.blackjack=false
@@ -103,23 +104,38 @@ func resetTable():
 	newDeal=false
 	$placeBet.visible = true
 	$chip100.visible = true
+
+func mockCard(value):
+	var Face = 'Club'
+	var Value = value
+	var Score = int(value)
+	
+	if value in ['J','Q','K']: Score = 10
+	if value in ['A']: Score = 11
+	
+	return {'suit':Face, 'value': Value, 'score': Score, 'hidden': false}
 	
 func dealInitialCards():
 	$placeBet.visible = false
 	$chip100.visible = false
+	var playerHand = hand.new()
+	var dealerHand = hand.new()
 	
-	dealCard('dealer',null)
-	#dealCard('dealer',{'suit':'Club','value':7,'score':7,'hidden':false})
-	dealCard('player1',null)
-	#dealCard('player1',{'suit':'Club','value':'A','score':11,'hidden':false})
-	dealCard('dealer',null)
-	#dealCard('dealer',{'suit':'Club','value':4,'score':4,'hidden':false})
-	dealCard('player1',null)
-	#dealCard('player1',{'suit':'Club','value':'A','score':11,'hidden':false})
-		
+	dealer.hands.append(dealerHand)
+	
+	#dealCard('dealer',dealerHand,null)
+	dealCard('dealer',dealerHand,mockCard('A'))
+
+	dealCard('player1',playerHand,null)
+
+	#dealCard('dealer',dealerHand,null)
+	dealCard('dealer',dealerHand,mockCard('10'))
+
+	dealCard('player1',playerHand,null)
+
 	if player1.score == 21:
 		player1.blackjack = true
-		showDealerHidden(dealer.hands[1])
+		showDealerHidden(dealer.hands[0].cards[1])
 		checkScore()
 	
 	if dealer.hasAce:
@@ -127,12 +143,12 @@ func dealInitialCards():
 		$actions/Insurance.visible=true
 		
 	elif dealer.blackjack:
-		dealer.hands[1].hidden=false
+		dealer.hands[0].cards[1].hidden=false
 		dealer.score = 21
-		showDealerHidden(dealer.hands[1])
+		showDealerHidden(dealer.hands[0].cards[1])
 		checkScore()
 
-func dealCard(to, custom):
+func dealCard(to, hand, custom):
 	# deal 1st card to player
 	var cardImgPath
 	var index = randi_range(0, deck.size()-1)
@@ -140,7 +156,7 @@ func dealCard(to, custom):
 	if custom: card = custom
 	match to:
 		'dealer':
-			if !dealer.isTurn && dealer.hands.size() == 1:
+			if !dealer.isTurn && dealer.hands[0].cards.size() == 1:
 				card.hidden = true
 				if (dealer.score + card.score == 21):
 					dealer.blackjack = true
@@ -149,11 +165,12 @@ func dealCard(to, custom):
 				if card.score == 11: 
 					dealer.aceCount += 1
 			
-			getImg('dealer', card, dealer.hands.size())
-			dealer.hands.append(card)
+			getImg('dealer', card, dealer.hands[0].cards.size())
+			hand.cards.append(card)
+			#dealer.hands.append(card)
 
 			
-			if(dealer.hands[0].value in ['A']):
+			if(dealer.hands[0].cards[0].value in ['A']):
 				dealer.hasAce=true
 
 		'player1':
@@ -170,9 +187,9 @@ func dealCard(to, custom):
 
 	#dealer score
 	if dealer.score > 21 && dealer.aceCount > 0:
-		for n in dealer.hands.size():
-			if str(dealer.hands[n].value) == 'A' && dealer.hands[n].score == 11: 
-				dealer.hands[n].score = 1
+		for n in dealer.hands[0].cards.size():
+			if str(dealer.hands[0].cards[n].value) == 'A' && dealer.hands[0].cards[n].score == 11: 
+				dealer.hands[0].cards[n].score = 1
 				dealer.score -= 10
 				if dealer.score < 22: break
 	
@@ -221,17 +238,17 @@ func dealersTurn():
 	dealer.isTurn=true
 	checkScore()
 	
-	dealer.hands[1].hidden = false
-	dealer.score += dealer.hands[1].score
-	showDealerHidden(dealer.hands[1])
+	dealer.hands[0].cards[1].hidden = false
+	dealer.score += dealer.hands[0].cards[1].score
+	showDealerHidden(dealer.hands[0].cards[1])
 	
 	# dealer hits on soft-17
 	if dealer.score == 17 && dealer.hasAce && dealer.hands.size() == 2:
-		dealCard('dealer',null)
+		dealCard('dealer',dealer.hand[0],null)
 
 	#var count=0
 	while (!dealer.busted && !player1.busted) && dealer.score < 17:
-		dealCard('dealer',null)
+		dealCard('dealer',dealer.hands[0],null)
 		#if dealer.hands.size() == 2: dealCard('dealer',{'suit':'Club','value':'A','score':11,'hidden':false})
 		#else: dealCard('dealer',null)
 
@@ -254,7 +271,7 @@ func checkScore():
 		player1.balance += player1.bet * 2
 		newDeal = true
 	elif dealer.blackjack:
-		print('Dealer Blackjack...')
+		message('Dealer Blackjack...','RED')
 		# Did any one do Insurance?
 		newDeal = true
 	elif !player1.busted:
@@ -305,10 +322,10 @@ func _stand_button_pressed():
 func _hit_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-		if dealer.blackjack: dealersTurn()
+	if dealer.blackjack: dealersTurn(); return
 
 	#print("Hit")
-	dealCard('player1',null)
+	dealCard('player1',player1.hands[0],null)
 	
 	if player1.score > 21:
 		player1.busted = true
@@ -322,14 +339,14 @@ func _hit_button_pressed():
 func _double_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-		if dealer.blackjack: dealersTurn()
+	if dealer.blackjack: dealersTurn(); return
 
 	if player1.balance >= player1.bet:
 		#print("Double")
 		player1.balance -= player1.bet
 		player1.bet *= 2
 		updateMoney()
-		dealCard('player1',null)
+		dealCard('player1',player1.hands[0],null)
 		player1.isTurn=false
 		dealersTurn()
 	else:
@@ -338,7 +355,7 @@ func _double_button_pressed():
 func _split_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-		if dealer.blackjack: dealersTurn()
+	if dealer.blackjack: dealersTurn(); return
 
 	#print("Split")
 
@@ -422,3 +439,14 @@ class player:
 	var score=0
 	var insurance=false
 	var isTurn=false
+
+class hand:
+	var cards=[]
+	var blackjack=false
+	var hasAce=false
+	var aceCount=0
+	var busted=false
+	var score=0
+	var insurance=false
+	var isTurn=false
+	
