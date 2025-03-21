@@ -12,6 +12,7 @@ var isActive = players.player1
 var numberOfShuffles = 0
 var stats = {'win':0, 'draw': 0, 'loss':0}
 var deplayForNewHand = 2 # senconds
+var loadedStats = false
 
 enum players {dealer, player1, split, none}
 enum colors {RED, BLUE, CYAN, ORANGE, GRAY, YELLOW}
@@ -63,6 +64,8 @@ func mockCard(value):
 	return card
 
 func _ready():
+	loadGameStats()
+	
 	$Timer.wait_time = deplayForNewHand
 	showActions(actions.HIDE)
 	viewCenterX = get_viewport().size.x / 2
@@ -83,6 +86,8 @@ func _ready():
 	$Timer.timeout.connect(resetTable)
 
 func resetTable():
+	saveGameStats()
+
 	showActions(actions.HIDE)
 	isActive = players.player1
 
@@ -183,7 +188,7 @@ func dealCard(to, custom):
 	$scores/totalDealer.visible = true
 	$scores/totalPlayer.visible = true
 	updateTotal()
-	
+
 func getHandScore(hand):
 	var totalScore = 0
 	var aceIndex = []
@@ -225,7 +230,13 @@ func updateTotal():
 		
 	#stats:
 	$stats/cardsRemaining.text = 'number of cards left: %s' % str(deck.size())
-	
+
+func updateStats():
+	#stats:
+	$stats/numberOfShuffles.text = 'number of shuffles: %s' % str(numberOfShuffles)
+	$stats/totalWinnning.text = 'winning: %s' % str(player1.totalWin - player1.totalBet)
+	$stats/winLoss.text = 'win: %d %4s draw: %d %4s loss: %d' % [stats.win,'', stats.draw,'', stats.loss]
+
 func playsound():
 	$sound/chip.play()
 	await $sound/chip.finished
@@ -279,6 +290,21 @@ func dealersTurn():
 		dealCard(players.dealer,null)
 
 	checkScore()
+
+func nextTurn():
+	if player1.split.size() > 0 && isActive != players.split:
+		isActive = players.split
+		$scores/totalPlayer.add_theme_color_override('font_color','WHITE')
+		$scores/totalSplit.add_theme_color_override('font_color','RED')
+		dealCard(isActive, null)
+		updateTotal()
+	elif isActive == players.split:
+		isActive = players.dealer
+		$scores/totalSplit.add_theme_color_override('font_color','WHITE')
+	else:
+		isActive = players.dealer
+
+	if isActive == players.dealer:	dealersTurn()
 
 func checkScore():
 	var playerScore
@@ -345,12 +371,8 @@ func checkScore():
 
 		$Timer.start()
 
-		#stats:
-		$stats/numberOfShuffles.text = 'number of shuffles: %s' % str(numberOfShuffles)
-		$stats/totalWinnning.text = 'winning: %s' % str(player1.totalWin - player1.totalBet)
-		#$stats/winLoss.text = 'win: '+ str(stats.win) + '\tdraw: ' + str(stats.draw) + '\tloss: ' + str(stats.loss)
-		$stats/winLoss.text = 'win: %d %4s draw: %d %4s loss: %d' % [stats.win,'', stats.draw,'', stats.loss]
-
+		updateStats()
+		
 func _placeBet_button_pressed():
 
 	$sound/chip.play()
@@ -372,21 +394,6 @@ func _chip100_button_pressed():
 
 	player1.bet[0] += 100
 	updateMoney()
-
-func nextTurn():
-	if player1.split.size() > 0 && isActive != players.split:
-		isActive = players.split
-		$scores/totalPlayer.add_theme_color_override('font_color','WHITE')
-		$scores/totalSplit.add_theme_color_override('font_color','RED')
-		dealCard(isActive, null)
-		updateTotal()
-	elif isActive == players.split:
-		isActive = players.dealer
-		$scores/totalSplit.add_theme_color_override('font_color','WHITE')
-	else:
-		isActive = players.dealer
-
-	if isActive == players.dealer:	dealersTurn()
 
 func _stand_button_pressed():
 	$actions/Insurance.visible = false
@@ -516,6 +523,33 @@ func loadBackground():
 	background.texture = texture
 	add_child(background)
 	pass
+
+func saveGameStats():
+	var save_values={
+		'balance':player1.balance,
+		'win':stats.win,
+		'draw':stats.draw,
+		'loss':stats.loss
+	}
+	var file=FileAccess.open('user://savedStats.dat',FileAccess.WRITE)
+	file.store_var(save_values)
+	#file.store_line('Hey')
+	file.close()
+
+func loadGameStats():
+	if loadedStats == false:
+		loadedStats= true # only attemp to load when game starts for first time
+		if !FileAccess.file_exists('user://savedStats.dat'):
+			print('No saved to load!')
+			return
+		var file = FileAccess.open('user://savedStats.dat',FileAccess.READ)
+		var content = file.get_var()
+
+		player1.balance = int(content['balance'])
+		stats.win = int(content['win'])
+		stats.draw = int(content['draw'])
+		stats.loss = int(content['loss'])
+		updateStats()
 
 class card:
 	var suit
