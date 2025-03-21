@@ -21,12 +21,6 @@ script/source = "extends Label
 [node name="Main" type="Node"]
 script = ExtResource("1_7mycd")
 
-[node name="sound" type="Node" parent="."]
-
-[node name="chip" type="AudioStreamPlayer2D" parent="sound"]
-position = Vector2(799, 268)
-stream = ExtResource("2_kek77")
-
 [node name="Background" type="TextureRect" parent="."]
 z_index = -1
 z_as_relative = false
@@ -55,43 +49,14 @@ offset_bottom = 499.0
 action_mode = 0
 icon = ExtResource("2_5vw27")
 
-[node name="Balance" type="Label" parent="."]
-offset_left = 11.0
-offset_top = 600.0
-offset_right = 72.0
-offset_bottom = 623.0
-text = "Balance"
-
-[node name="Bet" type="Label" parent="."]
-offset_left = 96.0
-offset_top = 602.0
-offset_right = 136.0
-offset_bottom = 625.0
-text = "Bet"
-
-[node name="totalDealer" type="Label" parent="."]
+[node name="Warning" type="Label" parent="."]
 visible = false
-offset_left = 529.0
-offset_top = 266.0
-offset_right = 569.0
-offset_bottom = 294.0
-text = "0"
-
-[node name="totalPlayer" type="Label" parent="."]
-visible = false
-offset_left = 533.0
-offset_top = 486.0
-offset_right = 573.0
-offset_bottom = 509.0
-text = "0"
-
-[node name="totalSplit" type="Label" parent="."]
-visible = false
-offset_left = 277.0
-offset_top = 486.0
-offset_right = 317.0
-offset_bottom = 509.0
-text = "0"
+offset_left = 15.0
+offset_top = 276.0
+offset_right = 404.0
+offset_bottom = 363.0
+theme_override_font_sizes/font_size = 36
+script = SubResource("GDScript_kek77")
 
 [node name="Timer" type="Timer" parent="."]
 wait_time = 3.0
@@ -185,14 +150,37 @@ theme_override_font_sizes/font_size = 36
 icon = ExtResource("5_kek77")
 icon_alignment = 1
 
-[node name="Warning" type="Label" parent="."]
+[node name="scores" type="Node" parent="."]
+
+[node name="totalDealer" type="Label" parent="scores"]
 visible = false
-offset_left = 15.0
-offset_top = 276.0
-offset_right = 404.0
-offset_bottom = 363.0
-theme_override_font_sizes/font_size = 36
-script = SubResource("GDScript_kek77")
+offset_left = 529.0
+offset_top = 266.0
+offset_right = 569.0
+offset_bottom = 294.0
+text = "0"
+
+[node name="totalPlayer" type="Label" parent="scores"]
+visible = false
+offset_left = 533.0
+offset_top = 486.0
+offset_right = 573.0
+offset_bottom = 509.0
+text = "0"
+
+[node name="totalSplit" type="Label" parent="scores"]
+visible = false
+offset_left = 277.0
+offset_top = 486.0
+offset_right = 317.0
+offset_bottom = 509.0
+text = "0"
+
+[node name="sound" type="Node" parent="."]
+
+[node name="chip" type="AudioStreamPlayer2D" parent="sound"]
+position = Vector2(799, 268)
+stream = ExtResource("2_kek77")
 
 [node name="stats" type="Node" parent="."]
 
@@ -222,3 +210,17 @@ offset_left = 25.0
 offset_top = 120.0
 offset_right = 65.0
 offset_bottom = 143.0
+
+[node name="Bet" type="Label" parent="stats"]
+offset_left = 96.0
+offset_top = 602.0
+offset_right = 136.0
+offset_bottom = 625.0
+text = "Bet"
+
+[node name="Balance" type="Label" parent="stats"]
+offset_left = 11.0
+offset_top = 600.0
+offset_right = 72.0
+offset_bottom = 623.0
+text = "Balance"

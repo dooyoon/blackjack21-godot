@@ -11,6 +11,7 @@ var cardSize = 125
 var isActive = players.player1
 var numberOfShuffles = 0
 var stats = {'win':0, 'draw': 0, 'loss':0}
+var deplayForNewHand = 2 # senconds
 
 enum players {dealer, player1, split, none}
 enum colors {RED, BLUE, CYAN, ORANGE, GRAY, YELLOW}
@@ -23,7 +24,7 @@ func message(msg, colorIndex):
 	$Warning.add_theme_font_size_override("font_size", 36)
 	$Warning.add_theme_color_override('font_color',colors.keys()[colorIndex])
 	
-	await get_tree().create_timer(3).timeout
+	await get_tree().create_timer(deplayForNewHand).timeout
 	$Warning.visible = false
 	updateMoney()
 
@@ -62,13 +63,14 @@ func mockCard(value):
 	return card
 
 func _ready():
-	showButtons(actions.HIDE)
+	$Timer.wait_time = deplayForNewHand
+	showActions(actions.HIDE)
 	viewCenterX = get_viewport().size.x / 2
 	viewCenterY = get_viewport().size.y / 2
 	
 	buildDeck()
-	$Balance.text = str(player1.balance)
-	$Bet.text = str(player1.bet[0])
+	$stats/Balance.text = str(player1.balance)
+	$stats/Bet.text = str(player1.bet[0])
 
 	$actions/Stand.pressed.connect(_stand_button_pressed)
 	$actions/Hit.pressed.connect(_hit_button_pressed)
@@ -81,7 +83,7 @@ func _ready():
 	$Timer.timeout.connect(resetTable)
 
 func resetTable():
-	showButtons(actions.HIDE)
+	showActions(actions.HIDE)
 	isActive = players.player1
 
 	dealer.hands.clear()
@@ -96,9 +98,9 @@ func resetTable():
 	#player1.totalBet=0
 	#player1.totalWin=0
 
-	$totalDealer.visible = false
-	$totalPlayer.visible = false
-	$totalSplit.visible = false
+	$scores/totalDealer.visible = false
+	$scores/totalPlayer.visible = false
+	$scores/totalSplit.visible = false
 	$placeBet.visible = true
 	
 	for card in dealtCardsImg:
@@ -169,17 +171,17 @@ func dealCard(to, custom):
 		players.player1:
 			getImg(players.player1, card, player1.hands.size())
 			player1.hands.append(card)
-			if player1.hands.size() > 2: showButtons(actions.DOUBLE_OFF)
+			showDoubleSplit(player1.hands)
 
 		players.split:
 			player1.split.append(card)
 			getImg(players.split, card, player1.split.size())
-			if player1.hands.size() > 2: showButtons(actions.DOUBLE_OFF)
+			showDoubleSplit(player1.hands)
 
 	deck.pop_at(index)
 
-	$totalDealer.visible = true
-	$totalPlayer.visible = true
+	$scores/totalDealer.visible = true
+	$scores/totalPlayer.visible = true
 	updateTotal()
 	
 func getHandScore(hand):
@@ -212,14 +214,14 @@ func isBlackjack(hand):
 	return false
 
 func updateMoney():
-	$Balance.text = str(player1.balance)
-	$Bet.text = str(player1.bet[0])
+	$stats/Balance.text = str(player1.balance)
+	$stats/Bet.text = str(player1.bet[0])
 
 func updateTotal():
-	$totalPlayer.text = str(getHandScore(player1.hands))
-	$totalDealer.text = str(getHandScore(dealer.hands))
+	$scores/totalPlayer.text = str(getHandScore(player1.hands))
+	$scores/totalDealer.text = str(getHandScore(dealer.hands))
 	if (player1.split.size() > 0): 
-		$totalSplit.text = str(getHandScore(player1.split))
+		$scores/totalSplit.text = str(getHandScore(player1.split))
 		
 	#stats:
 	$stats/cardsRemaining.text = 'number of cards left: %s' % str(deck.size())
@@ -228,7 +230,7 @@ func playsound():
 	$sound/chip.play()
 	await $sound/chip.finished
 
-func showButtons(show):
+func showActions(show):
 	match show:
 		actions.SHOW:
 			$actions/Stand.visible = true
@@ -251,8 +253,15 @@ func showButtons(show):
 			$actions/Split.visible = false
 			$actions/Insurance.visible = false
 
+func showDoubleSplit(hand):
+	if hand.size() == 2:
+		if hand[0].score == hand[1].score: showActions(actions.SPLIT)
+	if hand.size() > 2:
+		showActions(actions.DOUBLE_OFF)
+		showActions(actions.SPLIT_OFF)
+
 func dealersTurn():
-	showButtons(actions.HIDE)
+	showActions(actions.HIDE)
 	isActive = players.dealer
 	
 	dealer.hands[1].hidden = false
@@ -330,9 +339,9 @@ func checkScore():
 	
 	if isActive == players.none:
 		playsound()
-		$Balance.text = str(player1.balance)
+		$stats/Balance.text = str(player1.balance)
 		player1.bet = [0]
-		$Bet.text = str(player1.bet[0])
+		$stats/Bet.text = str(player1.bet[0])
 
 		$Timer.start()
 
@@ -341,7 +350,6 @@ func checkScore():
 		$stats/totalWinnning.text = 'winning: %s' % str(player1.totalWin - player1.totalBet)
 		#$stats/winLoss.text = 'win: '+ str(stats.win) + '\tdraw: ' + str(stats.draw) + '\tloss: ' + str(stats.loss)
 		$stats/winLoss.text = 'win: %d %4s draw: %d %4s loss: %d' % [stats.win,'', stats.draw,'', stats.loss]
-		
 
 func _placeBet_button_pressed():
 
@@ -353,7 +361,7 @@ func _placeBet_button_pressed():
 		player1.totalBet += player1.bet[0]
 		updateMoney()	
 		dealInitialCards()
-		showButtons(actions.SHOW)
+		showActions(actions.SHOW)
 	else:
 		message('Place a bet first',colors.ORANGE)
 
@@ -368,12 +376,13 @@ func _chip100_button_pressed():
 func nextTurn():
 	if player1.split.size() > 0 && isActive != players.split:
 		isActive = players.split
-		$totalPlayer.add_theme_color_override('font_color','WHITE')
-		$totalSplit.add_theme_color_override('font_color','RED')
+		$scores/totalPlayer.add_theme_color_override('font_color','WHITE')
+		$scores/totalSplit.add_theme_color_override('font_color','RED')
+		dealCard(isActive, null)
 		updateTotal()
 	elif isActive == players.split:
 		isActive = players.dealer
-		$totalSplit.add_theme_color_override('font_color','WHITE')
+		$scores/totalSplit.add_theme_color_override('font_color','WHITE')
 	else:
 		isActive = players.dealer
 
@@ -431,8 +440,8 @@ func _split_button_pressed():
 	message("Split",colors.RED)
 	player1.split.append(player1.hands[1])
 	player1.hands.pop_back()
-	$totalSplit.visible = true
-	$totalPlayer.add_theme_color_override('font_color','RED')
+	$scores/totalSplit.visible = true
+	$scores/totalPlayer.add_theme_color_override('font_color','RED')
 	remove_child(dealtCardsImg[player1.split[0].imageIndex])
 	
 	getImg(players.split,player1.split[0],player1.split.size())
@@ -497,7 +506,7 @@ func showDealerHidden(tempCard):
 	var texture = ImageTexture.create_from_image(image)
 	tempCard.image.texture = texture
 	
-	$totalDealer.text = str(getHandScore(dealer.hands))
+	$scores/totalDealer.text = str(getHandScore(dealer.hands))
 
 func loadBackground():
 	var background = TextureRect.new()
