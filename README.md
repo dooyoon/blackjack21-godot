@@ -1,6 +1,6 @@
 # Purpose
 
-Simple blackjack project to learn GoDot engine. https://godotengine.org/
+Simple blackjack project to learn Godot engine. https://godotengine.org/
 
 
 # Goal
