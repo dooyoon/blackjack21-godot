@@ -77,20 +77,23 @@ func _ready():
 	$Timer.timeout.connect(resetTable)
 
 func resetTable():
+	print('totalBet: %s' % player1.totalBet)
+	print('totalWin: %s' % player1.totalWin)
+
 	showButtons(false)
 	isActive = players.player1
 
 	dealer.hands.clear()
 	dealer.hasAce=false
-	dealer.blackjack=false
 	dealer.hasAce=false
 
 	player1.hands.clear()
 	player1.split.clear()
 	player1.bet = [0]
-	player1.blackjack=false
 	player1.hasAce=false
 	player1.insurance=false
+	player1.totalBet=0
+	player1.totalWin=0
 
 	$totalDealer.visible = false
 	$totalPlayer.visible = false
@@ -128,21 +131,18 @@ func dealInitialCards():
 	dealCard(players.player1,null)
 	#dealCard(players.player1,mockCard('A'))
 
-	if getHandScore(player1.hands) == 21:
-		player1.blackjack = true
+	if isBlackjack(player1.hands):
 		showDealerHidden(dealer.hands[1])
-		checkScore(player1.hands)
+		checkScore()
 	
 	if dealer.hasAce:
 		message('Insurance?',colors.YELLOW)
 		$actions/Insurance.visible=true
-		if dealer.hands[1].score == 10:
-			dealer.blackjack = true
 		
 	elif dealer.hands[1].score + dealer.hands[0].score == 21:
 		dealer.hands[1].hidden=false
 		showDealerHidden(dealer.hands[1])
-		checkScore(null)
+		checkScore()
 
 func dealCard(to, custom):
 	# deal 1st card to player
@@ -201,6 +201,14 @@ func getHandScore(hand):
 
 	return totalScore
 
+func isBlackjack(hand):
+	var score=0
+	if hand.size() == 2:
+		for n in hand:
+			score += n.score
+		if score == 21: return true		
+	return false
+
 func updateMoney():
 	$Balance.text = str(player1.balance)
 	$Bet.text = str(player1.bet[0])
@@ -237,7 +245,7 @@ func dealersTurn():
 	showDealerHidden(dealer.hands[1])
 	
 	if getHandScore(player1.hands) > 21:
-		checkScore(null) # if player busted, checkScore and start new hand
+		checkScore() # if player busted, checkScore and start new hand
 	
 	# dealer hits on soft-17
 	if getHandScore(dealer.hands) == 17 && dealer.hasAce && dealer.hands.size() == 2:
@@ -247,57 +255,72 @@ func dealersTurn():
 	while (getHandScore(dealer.hands) < 17 && getHandScore(player1.hands) <= 21):
 		dealCard(players.dealer,null)
 
-	checkScore(null)
+	checkScore()
 
-func checkScore(hands):
-	if hands == null: hands = player1.hands
-	var playerScore = getHandScore(hands)
+func checkScore():
+	var playerScore
+	var playerBlackjack
 	var dealerScore = getHandScore(dealer.hands)
-		
-	if player1.blackjack && !dealer.blackjack:
-		message('BlackJack!',colors.ORANGE)
-		player1.balance += player1.bet[0] + player1.bet[0] * 1.5
-		isActive = players.none
-	elif player1.blackjack && dealer.blackjack:
-		message('Even Money',colors.CYAN)
-		player1.balance += player1.bet[0] * 2
-		isActive = players.none
-	elif dealer.blackjack:
-		message('Dealer Blackjack...',colors.RED)
-		# Did any one do Insurance?
-		isActive = players.none
-	elif !playerScore > 21:
-		if dealerScore > 21 || playerScore > dealerScore: 
-			message('Won',colors.ORANGE)
-			player1.balance += player1.bet[0] * 2
+	var dealerBlackjack = isBlackjack(dealer.hands)
+
+	for n in player1.bet.size():
+		match n:
+			0: 
+				playerScore = getHandScore(player1.hands)
+				playerBlackjack = isBlackjack(player1.hands)
+			1: 
+				playerScore = getHandScore(player1.split)
+				playerBlackjack = isBlackjack(player1.split)
+
+		if playerBlackjack && !dealerBlackjack:
+			message('BlackJack!',colors.ORANGE)
+			player1.balance += player1.bet[n] + player1.bet[n] * 1.5
+			player1.totalWin += player1.bet[n] + player1.bet[n] * 1.5
 			isActive = players.none
-		elif dealerScore > playerScore:
+		elif playerBlackjack && dealerBlackjack:
+			message('Even Money',colors.CYAN)
+			player1.balance += player1.bet[n] * 2
+			player1.totalWin += player1.bet[n] * 2
+			isActive = players.none
+		elif dealerBlackjack:
+			message('Dealer Blackjack...',colors.RED)
+			# Did any one do Insurance?
+			isActive = players.none
+		elif !playerScore > 21:
+			if dealerScore > 21 || playerScore > dealerScore: 
+				message('Won',colors.ORANGE)
+				player1.balance += player1.bet[n] * 2
+				player1.totalWin += player1.bet[n] * 2
+				isActive = players.none
+			elif dealerScore > playerScore:
+				message('Lost',colors.RED)
+				isActive = players.none
+			elif dealerScore == playerScore:
+				message('Push',colors.CYAN)
+				player1.balance += player1.bet[n]
+				player1.totalWin += player1.bet[n]
+				isActive = players.none
+			
+		elif playerScore > 21 && dealerScore <=21:
 			message('Lost',colors.RED)
 			isActive = players.none
-		elif dealerScore == playerScore:
-			message('Push',colors.CYAN)
-			player1.balance += player1.bet[0]
-			isActive = players.none
-		
-	elif playerScore > 21 && dealerScore <=21:
-		message('Lost',colors.RED)
-		isActive = players.none
-	
-	playsound()
-	player1.bet = [0]
-	$Balance.text = str(player1.balance)
-	$Bet.text = str(player1.bet[0])
 	
 	if isActive == players.none:
+		playsound()
+		$Balance.text = str(player1.balance)
+		player1.bet = [0]
+		$Bet.text = str(player1.bet[0])
 		$Timer.start()
 
 func _placeBet_button_pressed():
 	$sound/chip.play()
 	await $sound/chip.finished
 	if player1.bet[0] > 0:
+		$placeBet.visible = false
+		player1.balance -= player1.bet[0]
+		player1.totalBet += player1.bet[0]
 		dealInitialCards()
 		showButtons(true)
-		$placeBet.visible = false
 	else:
 		message('Place a bet first',colors.ORANGE)
 
@@ -322,7 +345,6 @@ func nextTurn():
 	else:
 		isActive = players.dealer
 
-	
 	if isActive == players.dealer:	dealersTurn()
 
 func _stand_button_pressed():
@@ -332,7 +354,7 @@ func _stand_button_pressed():
 func _hit_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-	if dealer.blackjack: dealersTurn(); return
+	if isBlackjack(dealer.hands): dealersTurn(); return
 
 	match isActive:
 		players.split:
@@ -347,21 +369,31 @@ func _hit_button_pressed():
 func _double_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-	if dealer.blackjack: dealersTurn(); return
+	if isBlackjack(dealer.hands): dealersTurn(); return
 
-	if player1.balance >= player1.bet[0]:
-		player1.balance -= player1.bet[0]
-		player1.bet[0] *= 2
-		updateMoney()
-		dealCard(players.player1,null)
-		nextTurn()
-	else:
-		message('Not enough balace left!',colors.RED)
+	if isActive == players.player1:
+		if player1.balance >= player1.bet[0]:
+			player1.balance -= player1.bet[0]
+			player1.totalBet += player1.bet[0]
+			player1.bet[0] = player1.bet[0] * 2
+		else:
+			message('Need more money!',colors.RED)
+	elif isActive == players.split && player1.bet.size() > 1:
+		if player1.balance >= player1.bet[1]:
+			player1.balance -= player1.bet[1]
+			player1.totalBet += player1.bet[1]
+			player1.bet[1] = player1.bet[1] * 2
+		else:
+			message('Need more money!',colors.RED)
+		
+	updateMoney()
+	dealCard(isActive,null)
+	nextTurn()
 
 func _split_button_pressed():
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
-	if dealer.blackjack: dealersTurn(); return
+	if isBlackjack(dealer.hands): dealersTurn(); return
 
 	#if player1.hands.size() == 1: return
 	message("Split",colors.RED)
@@ -369,7 +401,6 @@ func _split_button_pressed():
 	player1.hands.pop_back()
 	$totalSplit.visible = true
 	$totalPlayer.add_theme_color_override('font_color','RED')
-	updateTotal()
 	remove_child(dealtCardsImg[player1.split[0].imageIndex])
 	
 	getImg(players.split,player1.split[0],player1.split.size())
@@ -377,13 +408,15 @@ func _split_button_pressed():
 	
 	player1.bet.append(player1.bet[0])
 	player1.balance -= player1.bet[0]
+	player1.totalBet += player1.bet[0]
+	updateTotal()
 
 func _insurance_button_pressed():
 	message("Got Insurance", colors.ORANGE)
 	$actions/Insurance.visible=false
 	player1.balance -= player1.bet[0] / 2
 	updateMoney()
-	if dealer.blackjack:
+	if isBlackjack(dealer.hands):
 		player1.balance += player1.bet[0] * 1.5
 		nextTurn()
 
@@ -456,6 +489,7 @@ class player:
 	var bet=[0]
 	var hands=[]
 	var split=[]
-	var blackjack=false
 	var hasAce=false
 	var insurance=false
+	var totalBet=0
+	var totalWin=0
