@@ -85,6 +85,14 @@ offset_right = 573.0
 offset_bottom = 509.0
 text = "0"
 
+[node name="totalSplit" type="Label" parent="."]
+visible = false
+offset_left = 277.0
+offset_top = 486.0
+offset_right = 317.0
+offset_bottom = 509.0
+text = "0"
+
 [node name="Timer" type="Timer" parent="."]
 wait_time = 3.0
 

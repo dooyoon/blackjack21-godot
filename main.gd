@@ -92,6 +92,7 @@ func resetTable():
 
 	$totalDealer.visible = false
 	$totalPlayer.visible = false
+	$totalSplit.visible = false
 	$placeBet.visible = true
 	
 	for card in dealtCardsImg:
@@ -165,6 +166,10 @@ func dealCard(to, custom):
 			getImg(players.player1, card, player1.hands.size())
 			player1.hands.append(card)
 
+		players.split:
+			player1.split.append(card)
+			getImg(players.split, card, player1.split.size())
+
 	deck.pop_at(index)
 
 	$totalDealer.visible = true
@@ -201,6 +206,8 @@ func updateMoney():
 func updateTotal():
 	$totalPlayer.text = str(getHandScore(player1.hands))
 	$totalDealer.text = str(getHandScore(dealer.hands))
+	if (player1.split.size() > 0): 
+		$totalSplit.text = str(getHandScore(player1.split))
 	
 func playsound():
 	$sound/chip.play()
@@ -302,11 +309,19 @@ func _chip100_button_pressed():
 	updateMoney()
 
 func nextTurn():
-	if player1.split.size() > 0:
+	if player1.split.size() > 0 && isActive != players.split:
 		isActive = players.split
+		$totalPlayer.add_theme_color_override('font_color','WHITE')
+		$totalSplit.add_theme_color_override('font_color','RED')
+		updateTotal()
+	elif isActive == players.split:
+		isActive = players.dealer
+		$totalSplit.add_theme_color_override('font_color','WHITE')
 	else:
 		isActive = players.dealer
-		dealersTurn()
+
+	
+	if isActive == players.dealer:	dealersTurn()
 
 func _stand_button_pressed():
 	$actions/Insurance.visible = false
@@ -320,9 +335,7 @@ func _hit_button_pressed():
 	match isActive:
 		players.split:
 			dealCard(players.split,null)
-			if getHandScore(player1.hands) > 21:
-				nextTurn()
-			if getHandScore(player1.hands) == 21:
+			if getHandScore(player1.split) >= 21:
 				nextTurn()
 		_:
 			dealCard(players.player1,null)
@@ -339,7 +352,7 @@ func _double_button_pressed():
 		player1.bet *= 2
 		updateMoney()
 		dealCard(players.player1,null)
-		dealersTurn()
+		nextTurn()
 	else:
 		message('Not enough balace left!',colors.RED)
 
@@ -348,13 +361,17 @@ func _split_button_pressed():
 		$actions/Insurance.visible = false
 	if dealer.blackjack: dealersTurn(); return
 
+	#if player1.hands.size() == 1: return
 	message("Split",colors.RED)
 	player1.split.append(player1.hands[1])
 	player1.hands.pop_back()
+	$totalSplit.visible = true
+	$totalPlayer.add_theme_color_override('font_color','RED')
 	updateTotal()
 	remove_child(dealtCardsImg[player1.split[0].imageIndex])
 	
-	getImg('split',player1.split[0],player1.split.size())
+	getImg(players.split,player1.split[0],player1.split.size())
+	dealCard(players.player1,null)
 
 func _insurance_button_pressed():
 	message("Got Insurance", colors.ORANGE)
@@ -389,9 +406,9 @@ func getImg(to, tempCard, count): # card width, height is 3/2 ratio
 		players.dealer: 
 			newCard.position.y = 75
 			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 2 - 100	#newCard.position.x = viewCenterX - size/2
-		'split':
+		players.split:
 			newCard.position.y = 300
-			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 2 - 400	#newCard.position.x = viewCenterX - size/2
+			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 2 - 500	#newCard.position.x = viewCenterX - size/2
 		_:
 			newCard.position.y = 300
 			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 2 - 100
