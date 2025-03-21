@@ -193,3 +193,32 @@ offset_right = 404.0
 offset_bottom = 363.0
 theme_override_font_sizes/font_size = 36
 script = SubResource("GDScript_kek77")
+
+[node name="stats" type="Node" parent="."]
+
+[node name="numberOfShuffles" type="Label" parent="stats"]
+offset_left = 25.0
+offset_top = 30.0
+offset_right = 102.0
+offset_bottom = 53.0
+text = "number of shuffles:"
+
+[node name="cardsRemaining" type="Label" parent="stats"]
+offset_left = 25.0
+offset_top = 60.0
+offset_right = 102.0
+offset_bottom = 83.0
+text = "cards left:"
+
+[node name="totalWinnning" type="Label" parent="stats"]
+offset_left = 25.0
+offset_top = 90.0
+offset_right = 103.0
+offset_bottom = 113.0
+text = "winnings: "
+
+[node name="winLoss" type="Label" parent="stats"]
+offset_left = 25.0
+offset_top = 120.0
+offset_right = 65.0
+offset_bottom = 143.0
