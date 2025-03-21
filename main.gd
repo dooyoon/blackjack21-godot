@@ -77,6 +77,7 @@ func _ready():
 	$Timer.timeout.connect(resetTable)
 
 func resetTable():
+	print(player1.balance)
 	print('totalBet: %s' % player1.totalBet)
 	print('totalWin: %s' % player1.totalWin)
 
@@ -264,6 +265,7 @@ func checkScore():
 	var dealerBlackjack = isBlackjack(dealer.hands)
 
 	for n in player1.bet.size():
+		print('inside for loop: %s' % n)
 		match n:
 			0: 
 				playerScore = getHandScore(player1.hands)
@@ -313,12 +315,14 @@ func checkScore():
 		$Timer.start()
 
 func _placeBet_button_pressed():
+
 	$sound/chip.play()
 	await $sound/chip.finished
 	if player1.bet[0] > 0:
 		$placeBet.visible = false
 		player1.balance -= player1.bet[0]
 		player1.totalBet += player1.bet[0]
+		updateMoney()	
 		dealInitialCards()
 		showButtons(true)
 	else:
@@ -330,7 +334,6 @@ func _chip100_button_pressed():
 	if isActive == players.dealer: return
 
 	player1.bet[0] += 100
-	player1.balance -= 100
 	updateMoney()
 
 func nextTurn():
