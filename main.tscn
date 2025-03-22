@@ -11,7 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://c0neefgd02jx3" path="res://img/100.svg" id="8_5vw27"]
 [ext_resource type="Texture2D" uid="uid://b4eat37lucw0w" path="res://img/empty_table.jpg" id="10_4c57u"]
 [ext_resource type="Script" uid="uid://d03kp68orkfy7" path="res://background.gd" id="11_efxa6"]
-[ext_resource type="Script" uid="uid://3nu1wmj0vsn0" path="res://api.gd" id="12_dg77c"]
+[ext_resource type="Script" path="res://api.gd" id="12_dg77c"]
 
 [sub_resource type="GDScript" id="GDScript_efxa6"]
 

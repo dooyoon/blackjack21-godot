@@ -13,6 +13,7 @@ var numberOfShuffles = 0
 var stats = {'win':0, 'draw': 0, 'loss':0}
 var deplayForNewHand = 2 # senconds
 var loadedStats = false
+var here=false
 
 enum players {dealer, player1, split, none}
 enum colors {RED, BLUE, CYAN, ORANGE, GRAY, YELLOW}
@@ -63,9 +64,29 @@ func mockCard(value):
 	card.score = score
 	return card
 
+func test():
+	var hands = {}
+	print ('size: %d ' % hands.size())
+	var card = card.new()
+	card.suit = 'Club'
+	card.value = 10
+	card.score =10 
+	hands.set('1',[card])
+	print('here')
+	print(hands.values())
+	var card1 = hands.get('1')
+	card1.append(card)
+	print(card1[0].value)
+	hands.set('2',[card1])
+	print(hands.size())
+	print(hands.get('1').size())
+	print(hands.values().size())
+	print(hands[hands.keys()[1]])
+
 func _ready():
 	loadGameStats()
-	
+	#test()
+		
 	$Timer.wait_time = deplayForNewHand
 	showActions(actions.HIDE)
 	viewCenterX = get_viewport().size.x / 2
@@ -140,22 +161,25 @@ func dealInitialCards():
 	dealCard(players.player1,null)
 	#dealCard(players.player1,mockCard('A'))
 
-	if isBlackjack(player1.hands):
-		showDealerHidden(dealer.hands[1])
-		checkScore()
+	updateTotal()
+#	if isBlackjack(player1.hands):
+#		showDealerHidden(dealer.hands[1])
+#		checkScore()
 	
-	if dealer.hasAce:
-		message('Insurance?',colors.YELLOW)
-		$actions/Insurance.visible=true
+#	if dealer.hasAce:
+#		message('Insurance?',colors.YELLOW)
+#		$actions/Insurance.visible=true
 		
-	elif dealer.hands[1].score + dealer.hands[0].score == 21:
-		dealer.hands[1].hidden=false
-		showDealerHidden(dealer.hands[1])
-		checkScore()
+#	elif dealer.hands[1].score + dealer.hands[0].score == 21:
+#		dealer.hands[1].hidden=false
+#		showDealerHidden(dealer.hands[1])
+#		checkScore()
 
 func dealCard(to, custom):
 	# deal 1st card to player
 	var cardImgPath
+	var temphand
+	
 	var index = randi_range(0, deck.size()-1)
 	var card = deck[index]
 	if custom: card = custom
@@ -164,47 +188,63 @@ func dealCard(to, custom):
 	
 	match to:
 		players.dealer:
-			if isActive != players.dealer && dealer.hands.size() == 1:
-				card.hidden = true
-
-			getImg(players.dealer, card, dealer.hands.size())
-			dealer.hands.append(card)
-
-			if dealer.hands[0].value in ['A']: 
-				dealer.hasAce = true
+			if dealer.hands.size() == 0:
+				card.hidden=true
+				temphand = hand.new()
+				dealer.hands.set('0',[])
+			else:
+				temphand = dealer.hands.values()[0]
+				if card.value in ['A']: temphand.hasAce = true
+					
+			getImg(players.dealer, card, temphand.cards.size())
+			temphand.cards.append(card)
+			temphand.score = getHandScore(temphand)
+			dealer.hands.values()[0] = temphand
 
 		players.player1:
-			getImg(players.player1, card, player1.hands.size())
-			player1.hands.append(card)
-			showDoubleSplit(player1.hands)
+			
+			if here:
+				print('here')
+			
+			if player1.hands.size() == 0:
+				temphand = hand.new()
+				player1.hands.set('0',[])
+			else:
+				temphand = player1.hands.values()[0]
 
-		players.split:
-			player1.split.append(card)
-			getImg(players.split, card, player1.split.size())
-			showDoubleSplit(player1.hands)
+			getImg(players.player1, card, temphand.cards.size())
+			temphand.cards.append(card)
+			temphand.score = getHandScore(temphand)
+			if temphand.score > 21: temphand.busted = true
+			temphand.blackjack = isBlackjack(temphand.cards)
+			player1.hands.values()[0] = temphand
+			#showDoubleSplit(player1.hands)
+
 
 	deck.pop_at(index)
 
 	$scores/totalDealer.visible = true
 	$scores/totalPlayer.visible = true
-	updateTotal()
+
+	#update hand score, blackjack, hasAce, busted, done
+	#updateTotal()
 
 func getHandScore(hand):
 	var totalScore = 0
 	var aceIndex = []
 	#check if hand has any Ace
 	var index=0
-	for card in hand:
+	for card in hand.cards:
 		if card.value in ['A']: aceIndex.append(index)
 		index +=1
 		
-	for card in hand:
+	for card in hand.cards:
 		if card.hidden == false:
 			totalScore += card.score
 			if totalScore > 21 && aceIndex.size() > 0:
 				for n in aceIndex:
-					if hand[n].score == 11: 
-						hand[n].score = 1
+					if hand.cards[n].score == 11: 
+						hand.cards[n].score = 1
 						totalScore -= 10
 						if totalScore < 22: break
 
@@ -215,7 +255,7 @@ func isBlackjack(hand):
 	if hand.size() == 2:
 		for n in hand:
 			score += n.score
-		if score == 21: return true		
+		if score == 21: return true
 	return false
 
 func updateMoney():
@@ -223,10 +263,10 @@ func updateMoney():
 	$stats/Bet.text = str(player1.bet[0])
 
 func updateTotal():
-	$scores/totalPlayer.text = str(getHandScore(player1.hands))
-	$scores/totalDealer.text = str(getHandScore(dealer.hands))
-	if (player1.split.size() > 0): 
-		$scores/totalSplit.text = str(getHandScore(player1.split))
+	$scores/totalPlayer.text = str(player1.hands.values()[0].score)
+	$scores/totalDealer.text = str(dealer.hands.values()[0].score)
+	#if (player1.split.size() > 0): 
+	#	$scores/totalSplit.text = str(getHandScore(player1.split))
 		
 	#stats:
 	$stats/cardsRemaining.text = 'number of cards left: %s' % str(deck.size())
@@ -275,8 +315,8 @@ func dealersTurn():
 	showActions(actions.HIDE)
 	isActive = players.dealer
 	
-	dealer.hands[1].hidden = false
-	showDealerHidden(dealer.hands[1])
+	dealer.hands.values()[0].cards[0].hidden = false
+	showDealerHidden(dealer.hands.values()[0].cards[0])
 	
 	if getHandScore(player1.hands) > 21:
 		checkScore() # if player busted, checkScore and start new hand
@@ -292,18 +332,19 @@ func dealersTurn():
 	checkScore()
 
 func nextTurn():
-	if player1.split.size() > 0 && isActive != players.split:
-		isActive = players.split
-		$scores/totalPlayer.add_theme_color_override('font_color','WHITE')
-		$scores/totalSplit.add_theme_color_override('font_color','RED')
-		dealCard(isActive, null)
-		updateTotal()
-	elif isActive == players.split:
-		isActive = players.dealer
-		$scores/totalSplit.add_theme_color_override('font_color','WHITE')
-	else:
-		isActive = players.dealer
+#	if player1.split.size() > 0 && isActive != players.split:
+#		isActive = players.split
+#		$scores/totalPlayer.add_theme_color_override('font_color','WHITE')
+#		$scores/totalSplit.add_theme_color_override('font_color','RED')
+#		dealCard(isActive, null)
+#		updateTotal()
+#	elif isActive == players.split:
+#		isActive = players.dealer
+#		$scores/totalSplit.add_theme_color_override('font_color','WHITE')
+#	else:
+#		isActive = players.dealer
 
+	isActive = players.dealer
 	if isActive == players.dealer:	dealersTurn()
 
 func checkScore():
@@ -400,6 +441,7 @@ func _stand_button_pressed():
 	nextTurn()
 
 func _hit_button_pressed():
+	here=true
 	if $actions/Insurance.visible == true:
 		$actions/Insurance.visible = false
 	if isBlackjack(dealer.hands): dealersTurn(); return
@@ -411,8 +453,10 @@ func _hit_button_pressed():
 				nextTurn()
 		_:
 			dealCard(players.player1,null)
-			if getHandScore(player1.hands) >= 21:
+			if player1.hands.values()[0].busted:
 				nextTurn()
+				#dealersTurn()
+				
 
 func _double_button_pressed():
 	if $actions/Insurance.visible == true:
@@ -513,7 +557,7 @@ func showDealerHidden(tempCard):
 	var texture = ImageTexture.create_from_image(image)
 	tempCard.image.texture = texture
 	
-	$scores/totalDealer.text = str(getHandScore(dealer.hands))
+	$scores/totalDealer.text = str(getHandScore(dealer.hands.values()[0].cards))
 
 func loadBackground():
 	var background = TextureRect.new()
@@ -559,12 +603,20 @@ class card:
 	var image
 	var imageIndex
 
+class hand:
+	var cards=[]
+	var score=0
+	var blackjack=false
+	var split=false
+	var hasAce=false
+	var aceIndex=[]
+	var busted=false
+	var done=false
+
 class player:
 	var balance=1000
 	var bet=[0]
-	var hands=[]
-	var split=[]
-	var hasAce=false
+	var hands={}
 	var insurance=false
 	var totalBet=0
 	var totalWin=0
