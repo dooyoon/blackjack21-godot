@@ -10,10 +10,11 @@ var viewCenterY
 var cardSize = 125
 var numberOfShuffles = 0
 var stats = {'win':0, 'draw': 0, 'loss':0}
-var deplayForNewHand = 2 # senconds
-var loadedStats = false
+var deplayForNewHand = 2.5 # senconds
+var loadedStats = true
+var splithand=false
 
-enum players {dealer, player1, split, none}
+enum players {dealer, player1, none}
 enum colors {RED, BLUE, CYAN, ORANGE, GRAY, YELLOW}
 enum actions {SHOW, HIDE, DOUBLE, SPLIT, DOUBLE_OFF, SPLIT_OFF}
 
@@ -91,18 +92,14 @@ func resetTable():
 	showActions(actions.HIDE)
 
 	dealer.hands.clear()
-
 	player1.hands.clear()
 	player1.bet = [0]
 
 	$scores/totalDealer.visible = false
 	$scores/totalPlayer.visible = false
-	$scores/totalSplit.visible = false
-	$placeBet.visible = true
 	
 	for card in dealtCardsImg:
-		remove_child(card)
-	
+		remove_child(card)	
 	dealtCardsImg.clear()
 
 	if deck.size() <= 15:
@@ -123,14 +120,14 @@ func dealInitialCards():
 	dealCard(players.dealer,null)
 	#dealCard(players.dealer,mockCard('A'))
 
-	dealCard(players.player1,null)
-	#dealCard(players.player1,mockCard(10))
+	#dealCard(players.player1,null)
+	dealCard(players.player1,mockCard(5))
 
 	dealCard(players.dealer,null)
 	#dealCard(players.dealer,mockCard(10))
 
-	dealCard(players.player1,null)
-	#dealCard(players.player1,mockCard('A'))
+	#dealCard(players.player1,null)
+	dealCard(players.player1,mockCard(5))
 	
 	if isBlackjack(player1.hands.values()[0]):
 		showDealerHidden(dealer.hands.values()[0].cards[1])
@@ -144,6 +141,7 @@ func dealCard(to, custom):
 	# deal 1st card to player
 	var cardImgPath
 	var temphand
+	var activeHandIndex=0
 
 	var index = randi_range(0, deck.size()-1)
 	var card = deck[index]
@@ -178,27 +176,38 @@ func dealCard(to, custom):
 			$scores/totalDealer.text = str(dealer.hands.values()[0].score)
 			
 		players.player1:
-			
 			match player1.hands.size():
 				0:
 					temphand = hand.new()
 					player1.hands.set('0',temphand)
 					temphand.bet = player1.bet[0]
 				_:
-					temphand = player1.hands.values()[0]
+					for n in player1.hands.size():
+						if !player1.hands.values()[n].done:
+							#deal 2nd card to new hand
+							if splithand: 
+								n += 1
+								activeHandIndex +=1
+							temphand=player1.hands.values()[n]
+							break
+						activeHandIndex += 1
 
-			temphand.cards.append(card)
-			getImg(players.player1, card, temphand.cards.size())
 			
-			if (temphand.cards.size() >= 2):
+			temphand.cards.append(card)
+			getImg(activeHandIndex+1, card, temphand.cards.size())
+			
+			if temphand.cards.size() >= 2:
 				temphand.blackjack = isBlackjack(temphand)
 				temphand.score = getHandScore(temphand)
+				showDoubleSplitButtons(temphand)
 				if temphand.score > 21: temphand.busted = true
+				if temphand.score >= 21: temphand.done = true
 
-			player1.hands.values()[0] = temphand
+			player1.hands.values()[activeHandIndex] = temphand
 
 			$scores/totalPlayer.visible = true
-			$scores/totalPlayer.text = str(player1.hands.values()[0].score)
+			if splithand: activeHandIndex -= 1
+			$scores/totalPlayer.text = str(player1.hands.values()[activeHandIndex].score)
 
 
 	deck.pop_at(index)
@@ -229,6 +238,7 @@ func isAllPlayersHandsDone():
 	var allhandsdone = true
 	for temphand in player1.hands.values():
 		if !temphand.done: allhandsdone = false
+		
 	return allhandsdone
 
 func dealersTurn():
@@ -362,12 +372,12 @@ func showActions(show):
 			$actions/Split.visible = false
 			$actions/Insurance.visible = false
 
-#func showDoubleSplit(hand):
-#	if hand.size() == 2:
-#		if hand[0].score == hand[1].score: showActions(actions.SPLIT)
-#	if hand.size() > 2:
-#		showActions(actions.DOUBLE_OFF)
-#		showActions(actions.SPLIT_OFF)
+func showDoubleSplitButtons(hand):
+	if hand.cards.size() == 2:
+		if hand.cards[0].score == hand.cards[1].score: showActions(actions.SPLIT)
+	if hand.cards.size() > 2:
+		showActions(actions.DOUBLE_OFF)
+		showActions(actions.SPLIT_OFF)
 
 func _placeBet_button_pressed():
 
@@ -397,8 +407,9 @@ func _hit_button_pressed():
 	for n in player1.hands.size():
 		if !player1.hands.values()[n].done:
 			dealCard(players.player1,null)
-			if player1.hands.values()[n].busted:
-				nextTurn()
+			break
+
+	if isAllPlayersHandsDone(): nextTurn()
 
 func _stand_button_pressed():
 	$actions/Insurance.visible = false
@@ -427,28 +438,39 @@ func _split_button_pressed():
 	if dealer.hands.values()[0].blackjack: nextTurn(); return
 
 	for n in player1.hands.size():
-		# hands still in play and only when there are only 2 cards for split.
-		if !player1.hands[n].done && player1.hands[n].cards.size() == 2:
+		# split hands in play and only when there are only 2 cards for split.
+		if (
+			!player1.hands.values()[n].done &&
+			player1.hands.values()[n].cards.size() == 2
+		):
 			message("Split",colors.RED)
-			$scores/totalSplit.visible = true
-			$scores/totalPlayer.add_theme_color_override('font_color','RED')
 			
 			var temphand = hand.new()
+			var halfscore = player1.hands.values()[n].score / 2
 			temphand.cards.append(player1.hands.values()[n].cards[1])
+			temphand.score = halfscore
+			player1.hands.values()[n].score = halfscore
 			player1.hands.values()[n].cards.pop_back()
 			remove_child(dealtCardsImg[temphand.cards[0].imageIndex])
 			
-			getImg(players.split,temphand.cards[0],1)
+			getImg(3,temphand.cards[0],1)
 			
-			temphand.bet = player1.hands[n].bet
+			temphand.bet = player1.hands.values()[n].bet
 			player1.balance -= temphand.bet
 			player1.totalBet += temphand.bet
 			
-			player1.hands.append(temphand)
-			player1.hands[n].done = true
+			var newHandKey = str(player1.hands.size())
+			player1.hands.set(newHandKey,temphand)
 			dealCard(players.player1,null)
+			
+			#deal another card to next new hand
+			splithand=true
+			dealCard(players.player1,null)
+			splithand=false
+			
+			
+			break # stop if this hand was split
 
-			nextTurn()
 
 func _insurance_button_pressed():
 	message("Buy Insurance", colors.ORANGE)
@@ -484,14 +506,14 @@ func getImg(to, tempCard, count): # card width, height is 3/2 ratio
 	
 	match to:
 		players.dealer: 
-			newCard.position.y = 75
-			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 2 - 100 #newCard.position.x = viewCenterX - size/2
-		players.split:
+			newCard.position.y = 50
+			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 3 + 100 #newCard.position.x = viewCenterX - size/2
+		players.player1:
 			newCard.position.y = 300
-			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 2 - 500 #newCard.position.x = viewCenterX - size/2
+			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 3 + 100
 		_:
 			newCard.position.y = 300
-			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 2 - 100
+			newCard.position.x = (get_viewport().size.x + (count * cardSize)) / 3 - 300 #newCard.position.x = viewCenterX - size/2
 	
 	dealtCardsImg.append(newCard)
 	add_child(newCard)
@@ -532,8 +554,8 @@ func saveGameStats():
 	file.close()
 
 func loadGameStats():
-	if loadedStats == false:
-		loadedStats= true # only attemp to load when game starts for first time
+	if loadedStats:
+		loadedStats= false # only attemp to load when game starts for first time
 		if !FileAccess.file_exists('user://savedStats.dat'):
 			print('No saved to load!')
 			return
