@@ -12,7 +12,6 @@ var numberOfShuffles = 0
 var stats = {'win':0, 'draw': 0, 'loss':0}
 var deplayForNewHand = 2 # senconds
 var loadedStats = false
-var here=false
 
 enum players {dealer, player1, split, none}
 enum colors {RED, BLUE, CYAN, ORANGE, GRAY, YELLOW}
@@ -64,7 +63,8 @@ func mockCard(value):
 	return card
 
 func _ready():
-	loadGameStats()
+	#loadGameStats()
+	player1.balance = 1000
 
 	$Timer.wait_time = deplayForNewHand
 	showActions(actions.HIDE)
@@ -120,14 +120,14 @@ func dealInitialCards():
 	$placeBet.visible = false
 	$chip100.visible = false
 
-	#dealCard(players.dealer,null)
-	dealCard(players.dealer,mockCard('A'))
+	dealCard(players.dealer,null)
+	#dealCard(players.dealer,mockCard('A'))
 
 	dealCard(players.player1,null)
 	#dealCard(players.player1,mockCard(10))
 
-	#dealCard(players.dealer,null)
-	dealCard(players.dealer,mockCard(10))
+	dealCard(players.dealer,null)
+	#dealCard(players.dealer,mockCard(10))
 
 	dealCard(players.player1,null)
 	#dealCard(players.player1,mockCard('A'))
@@ -139,11 +139,6 @@ func dealInitialCards():
 	if dealer.hands.values()[0].hasAce:
 		message('Insurance?',colors.YELLOW)
 		$actions/Insurance.visible=true
-		
-#	elif dealer.hands[1].score + dealer.hands[0].score == 21:
-#		dealer.hands[1].hidden=false
-#		showDealerHidden(dealer.hands[1])
-#		checkScore()
 
 func dealCard(to, custom):
 	# deal 1st card to player
@@ -218,7 +213,7 @@ func nextTurn():
 			player1.hands.values()[n].done = true
 			break
 
-	if allPlayersHandsDone(): 
+	if isAllPlayersHandsDone(): 
 		dealersTurn()
 		checkScore()
 		playsound()
@@ -230,7 +225,7 @@ func nextTurn():
 
 		updateStats()
 
-func allPlayersHandsDone():
+func isAllPlayersHandsDone():
 	var allhandsdone = true
 	for temphand in player1.hands.values():
 		if !temphand.done: allhandsdone = false
@@ -255,9 +250,13 @@ func dealersTurn():
 	if dealer.hands.values()[0].cards.size() == 2 && dealer.hands.values()[0].score == 17 && 	dealer.hands.values()[0].hasAce:
 		soft17=true
 
-	while ((soft17 || dealer.hands.values()[0].score < 17) && liveHands):
+	while (
+		(soft17 || dealer.hands.values()[0].score < 17) &&
+		liveHands &&
+		!dealer.hands.values()[0].blackjack
+		):
 		dealCard(players.dealer,null)
-
+	
 func checkScore():
 	var dealerBlackjack = dealer.hands.values()[0].blackjack
 	var dealerScore =  dealer.hands.values()[0].score
@@ -392,9 +391,8 @@ func _chip100_button_pressed():
 	updateMoney()
 
 func _hit_button_pressed():
-	if $actions/Insurance.visible == true:
-		$actions/Insurance.visible = false
-	if dealer.hands.values()[0].blackjack: dealersTurn(); return
+	if $actions/Insurance.visible: $actions/Insurance.visible = false
+	if dealer.hands.values()[0].blackjack: nextTurn(); return
 
 	for n in player1.hands.size():
 		if !player1.hands.values()[n].done:
@@ -407,17 +405,16 @@ func _stand_button_pressed():
 	nextTurn()
 
 func _double_button_pressed():
-	if $actions/Insurance.visible == true:
-		$actions/Insurance.visible = false
-	if dealer.hands[0].blackjack: dealersTurn(); return
+	if $actions/Insurance.visible: $actions/Insurance.visible = false
+	if dealer.hands.values()[0].blackjack: nextTurn(); return
 
 	for n in player1.hands.size():
-		if !player1.hands[n].done:
-			if player1.balance >= player1.hands[0].bet:
-				player1.balance -= player1.hands[n].bet
-				player1.totalBet += player1.hands[n].bet
-				player1.hands[n].bet = player1.hands[n].bet * 2
-				player1.hands[n].done = true
+		if !player1.hands.values()[n].done:
+			if player1.balance >= player1.hands.values()[n].bet:
+				player1.balance -= player1.hands.values()[n].bet
+				player1.totalBet += player1.hands.values()[n].bet
+				player1.hands.values()[n].bet = player1.hands.values()[n].bet * 2
+				player1.hands.values()[n].done = true
 				dealCard(players.player1,null)
 			else:
 				message('Don not have enough money!',colors.RED)
@@ -426,9 +423,8 @@ func _double_button_pressed():
 	nextTurn()
 
 func _split_button_pressed():
-	if $actions/Insurance.visible == true:
-		$actions/Insurance.visible = false
-	if dealer.hands[0].blackjack: dealersTurn(); return
+	if $actions/Insurance.visible: $actions/Insurance.visible = false
+	if dealer.hands.values()[0].blackjack: nextTurn(); return
 
 	for n in player1.hands.size():
 		# hands still in play and only when there are only 2 cards for split.
