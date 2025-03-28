@@ -235,11 +235,14 @@ func nextTurn():
 		updateStats()
 
 func isAllPlayersHandsDone():
-	var allhandsdone = true
+	var i =0
 	for temphand in player1.hands.values():
-		if !temphand.done: allhandsdone = false
+		if !temphand.done: 
+			$scores/totalPlayer.text = str(player1.hands.values()[i].score)
+			return false
+		i += 1
 		
-	return allhandsdone
+	return true
 
 func dealersTurn():
 	showActions(actions.HIDE)
