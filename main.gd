@@ -120,18 +120,19 @@ func dealInitialCards():
 	dealCard(players.dealer,null)
 	#dealCard(players.dealer,mockCard('A'))
 
-	#dealCard(players.player1,null)
-	dealCard(players.player1,mockCard(5))
+	dealCard(players.player1,null)
+	#dealCard(players.player1,mockCard('A'))
 
 	dealCard(players.dealer,null)
-	#dealCard(players.dealer,mockCard(10))
+	#dealCard(players.dealer,mockCard(6))
 
-	#dealCard(players.player1,null)
-	dealCard(players.player1,mockCard(5))
+	dealCard(players.player1,null)
+	#dealCard(players.player1,mockCard(10))
 	
 	if isBlackjack(player1.hands.values()[0]):
-		showDealerHidden(dealer.hands.values()[0].cards[1])
+		showDealerHidden(dealer.hands.values()[0].cards[1])		
 		checkScore()
+		$Timer.start()
 	
 	if dealer.hands.values()[0].hasAce:
 		message('Insurance?',colors.YELLOW)
@@ -183,6 +184,7 @@ func dealCard(to, custom):
 					temphand.bet = player1.bet[0]
 				_:
 					for n in player1.hands.size():
+						activeHandIndex = n
 						if !player1.hands.values()[n].done:
 							#deal 2nd card to new hand
 							if splithand: 
@@ -190,11 +192,11 @@ func dealCard(to, custom):
 								activeHandIndex +=1
 							temphand=player1.hands.values()[n]
 							break
-						activeHandIndex += 1
 
 			
 			temphand.cards.append(card)
 			getImg(activeHandIndex+1, card, temphand.cards.size())
+			if temphand.doubled && !temphand.done: temphand.done=true
 			
 			if temphand.cards.size() >= 2:
 				temphand.blackjack = isBlackjack(temphand)
@@ -259,23 +261,26 @@ func dealersTurn():
 		if !player1.hands.values()[n].busted: liveHands=true
 
 	# dealer hits on soft-17
-	var soft17=false
-	if dealer.hands.values()[0].cards.size() == 2 && dealer.hands.values()[0].score == 17 && 	dealer.hands.values()[0].hasAce:
-		soft17=true
-
-	while (
-		(soft17 || dealer.hands.values()[0].score < 17) &&
-		liveHands &&
-		!dealer.hands.values()[0].blackjack
-		):
+	if (dealer.hands.values()[0].cards.size() == 2 &&
+		dealer.hands.values()[0].score == 17 &&
+		dealer.hands.values()[0].hasAce
+	):
 		dealCard(players.dealer,null)
-	
+		
+	while (liveHands &&
+		!dealer.hands.values()[0].blackjack &&
+		!dealer.hands.values()[0].busted &&
+		dealer.hands.values()[0].score < 17
+	):
+		dealCard(players.dealer,null)
+		
+
 func checkScore():
 	var dealerBlackjack = dealer.hands.values()[0].blackjack
 	var dealerScore =  dealer.hands.values()[0].score
 	
 	for temphand in player1.hands.values():
-		if temphand.blackjack && dealerBlackjack:
+		if temphand.blackjack && !dealerBlackjack:
 			message('BlackJack!',colors.ORANGE)
 			player1.balance += temphand.bet * 2.5
 			player1.totalWin += temphand.bet * 2.5
@@ -428,11 +433,13 @@ func _double_button_pressed():
 				player1.balance -= player1.hands.values()[n].bet
 				player1.totalBet += player1.hands.values()[n].bet
 				player1.hands.values()[n].bet = player1.hands.values()[n].bet * 2
-				player1.hands.values()[n].done = true
+				player1.hands.values()[n].doubled = true
 				dealCard(players.player1,null)
+				break
 			else:
 				message('Don not have enough money!',colors.RED)
-		
+	if !isAllPlayersHandsDone(): return
+	
 	updateMoney()
 	nextTurn()
 
@@ -589,6 +596,7 @@ class hand:
 	var hasAce=false
 	var aceIndex=[]
 	var busted=false
+	var doubled=false
 	var done=false
 
 class player:
