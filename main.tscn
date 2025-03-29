@@ -11,7 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://c0neefgd02jx3" path="res://img/100.svg" id="8_5vw27"]
 [ext_resource type="Texture2D" uid="uid://b4eat37lucw0w" path="res://img/empty_table.jpg" id="10_4c57u"]
 [ext_resource type="Script" uid="uid://d03kp68orkfy7" path="res://background.gd" id="11_efxa6"]
-[ext_resource type="Script" uid="uid://3nu1wmj0vsn0" path="res://api.gd" id="12_dg77c"]
+[ext_resource type="Script" path="res://api.gd" id="12_dg77c"]
 
 [sub_resource type="GDScript" id="GDScript_efxa6"]
 
@@ -52,6 +52,7 @@ icon = ExtResource("2_5vw27")
 
 [node name="Warning" type="Label" parent="."]
 visible = false
+z_index = 1
 offset_left = 15.0
 offset_top = 276.0
 offset_right = 404.0
@@ -155,26 +156,23 @@ icon_alignment = 1
 
 [node name="totalDealer" type="Label" parent="scores"]
 visible = false
-offset_left = 529.0
-offset_top = 266.0
-offset_right = 569.0
-offset_bottom = 294.0
+offset_left = 900.0
+offset_top = 100.0
+offset_right = 940.0
+offset_bottom = 128.0
+theme_override_colors/font_color = Color(0.890196, 0, 0, 1)
+theme_override_font_sizes/font_size = 75
 text = "0"
 
 [node name="totalPlayer" type="Label" parent="scores"]
 visible = false
-offset_left = 533.0
-offset_top = 486.0
-offset_right = 573.0
-offset_bottom = 509.0
-text = "0"
-
-[node name="totalSplit" type="Label" parent="scores"]
-visible = false
-offset_left = 277.0
-offset_top = 486.0
-offset_right = 317.0
-offset_bottom = 509.0
+z_index = 1
+offset_left = 900.0
+offset_top = 300.0
+offset_right = 943.0
+offset_bottom = 403.0
+theme_override_colors/font_color = Color(0.0509804, 0.917647, 0.556863, 1)
+theme_override_font_sizes/font_size = 75
 text = "0"
 
 [node name="sound" type="Node" parent="."]
